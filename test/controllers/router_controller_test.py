@@ -1,7 +1,6 @@
-from uuid import uuid4
+from unittest.mock import MagicMock
 
 import pytest
-from pytest_mock import MockerFixture
 
 from controllers.router_controller import route_solve
 from logic.algorithm_decider import AlgorithmDecider
@@ -16,9 +15,10 @@ async def test_route_solve_sanity():
     request = RouterSolveRequest(
         items=[expected_item], volume=10, knapsack_id=get_random_string()
     )
-    algo_decider = AlgorithmDecider()
+    algo_decider = MagicMock(AlgorithmDecider)
 
     response = await route_solve(request, algo_decider)
 
     assert len(response.items) == 1
     assert response.items[0] == expected_item
+    algo_decider.decide.assert_called_once()
