@@ -7,4 +7,4 @@ def get_algorithm_decider():
 
 class AlgorithmDecider:
     async def decide(self):
-        return Algorithms.FIRST_FIT
+        return Algorithms.GREEDY
