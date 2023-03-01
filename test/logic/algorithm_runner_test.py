@@ -19,8 +19,8 @@ def test_algorithm_runner(mocker: MockerFixture):
     solver_loader.load = MagicMock(return_value=solver)
     runner = AlgorithmRunner(solver_loader)
     random_volume = random.randint(1, 5)
-    claim_spy = mocker.spy(runner, '_claim_items')
-    report_spy = mocker.spy(runner, '_report_solution')
+    claim_spy = mocker.spy(runner, "_claim_items")
+    report_spy = mocker.spy(runner, "_report_solution")
 
     result = runner.run_algorithm(expected_result, random_volume, MagicMock(Algorithms))
 
