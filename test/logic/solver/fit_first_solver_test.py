@@ -6,11 +6,13 @@ from test.utils import get_random_string
 def test_fit_first_solver():
     solver = FitFirstSolver()
     expected_results = [KnapsackItem(id=get_random_string(), value=10, volume=2)]
-    items = [KnapsackItem(id=get_random_string(), value=50, volume=5)] + expected_results + \
-            [KnapsackItem(id=get_random_string(), value=50, volume=4)]
+    items = (
+        [KnapsackItem(id=get_random_string(), value=50, volume=5)]
+        + expected_results
+        + [KnapsackItem(id=get_random_string(), value=50, volume=4)]
+    )
     available_volume = 4
 
     result = solver.solve(items, available_volume)
 
     assert expected_results == result
-
