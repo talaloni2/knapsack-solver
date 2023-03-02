@@ -6,10 +6,11 @@ from test.utils import get_random_string
 def test_brute_force_solver():
     solver = BruteForceSolver()
     expected_solution = [KnapsackItem(id=get_random_string(), value=5, volume=4)]
-    items = [KnapsackItem(id=get_random_string(), value=2, volume=1),
-             KnapsackItem(id=get_random_string(), value=2, volume=1),
-             KnapsackItem(id=get_random_string(), value=2, volume=3),
-             ] + expected_solution
+    items = [
+        KnapsackItem(id=get_random_string(), value=2, volume=1),
+        KnapsackItem(id=get_random_string(), value=2, volume=1),
+        KnapsackItem(id=get_random_string(), value=2, volume=3),
+    ] + expected_solution
 
     solution = solver.solve(items, 4)
 

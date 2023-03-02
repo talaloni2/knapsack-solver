@@ -12,9 +12,7 @@ from test.utils import get_random_string
 @pytest.mark.asyncio
 async def test_route_solve_sanity():
     expected_item = KnapsackItem(id=get_random_string(), value=10, volume=10)
-    request = RouterSolveRequest(
-        items=[expected_item], volume=10, knapsack_id=get_random_string()
-    )
+    request = RouterSolveRequest(items=[expected_item], volume=10, knapsack_id=get_random_string())
     algo_decider = MagicMock(AlgorithmDecider)
 
     response = await route_solve(request, algo_decider)

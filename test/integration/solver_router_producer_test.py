@@ -11,13 +11,6 @@ from models.rabbit_connection_params import get_rabbit_connection_params
 from test.utils import get_random_string
 
 
-@pytest.fixture
-async def random_queue_name(queues_cleaner: list) -> str:
-    queue_name = get_random_string()
-    queues_cleaner.append(queue_name)
-    return queue_name
-
-
 @pytest.mark.asyncio
 async def test_solver_router_producer(random_queue_name: str):
     producer = SolverRouterProducer(get_rabbit_connection_params(), random_queue_name)

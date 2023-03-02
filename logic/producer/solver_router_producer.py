@@ -22,9 +22,9 @@ class SolverRouterProducer:
         await self._channel.declare_queue(self._queue_name)
         return self
 
-    async def produce_solver_instance_request(self, message: SolverInstanceRequest):
+    async def produce_solver_instance_request(self, request: SolverInstanceRequest):
         await self._channel.default_exchange.publish(
-            aio_pika.Message(body=message.json().encode()),
+            aio_pika.Message(body=request.json().encode()),
             routing_key=self._queue_name,
         )
 

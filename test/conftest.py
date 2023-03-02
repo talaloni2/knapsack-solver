@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from models.rabbit_connection_params import get_rabbit_connection_params
 from server import app
+from test.utils import get_random_string
 
 
 @pytest.fixture()
@@ -26,3 +27,9 @@ async def queues_cleaner() -> list[str]:
         for q in created_queues:
             await channel.queue_delete(q)
 
+
+@pytest.fixture
+async def random_queue_name(queues_cleaner: list) -> str:
+    queue_name = get_random_string()
+    queues_cleaner.append(queue_name)
+    return queue_name
