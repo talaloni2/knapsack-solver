@@ -5,10 +5,6 @@ from models.algorithms import Algorithms
 from models.knapsack_item import KnapsackItem
 
 
-def get_algorithm_runner() -> AlgorithmRunner:
-    return AlgorithmRunner(SolverLoader())
-
-
 class AlgorithmRunner:
     def __init__(self, solver_loader: SolverLoader):
         self._solver_loader = solver_loader

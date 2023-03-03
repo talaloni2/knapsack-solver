@@ -7,7 +7,7 @@ from logic.producer.solver_router_producer import SolverRouterProducer
 from models.algorithms import Algorithms
 from models.knapsack_item import KnapsackItem
 from models.knapsack_solver_instance_dto import SolverInstanceRequest
-from models.rabbit_connection_params import get_rabbit_connection_params
+from component_factory import get_rabbit_connection_params
 from test.utils import get_random_string
 
 

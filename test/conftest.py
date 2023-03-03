@@ -2,7 +2,7 @@ import aio_pika
 import pytest
 from fastapi.testclient import TestClient
 
-from models.rabbit_connection_params import get_rabbit_connection_params
+from component_factory import get_rabbit_connection_params
 from server import app
 from test.utils import get_random_string
 
