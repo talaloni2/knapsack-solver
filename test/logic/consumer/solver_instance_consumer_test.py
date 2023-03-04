@@ -41,7 +41,7 @@ async def test_solver_consumer_claims(random_queue_name: str):
     algorithm_runner.run_algorithm.assert_called_once()
     items_claimer.claim_items.assert_called_once()
     items_claimer.release_claims.assert_called_once_with(non_accepted_items)
-    solution_reporter.report_solutions.assert_called_once()
+    solution_reporter.report_solution_suggestions.assert_called_once()
 
 
 async def _mock_channel_with_one_message_in_queue(request: SolverInstanceRequest):

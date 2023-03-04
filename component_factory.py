@@ -9,6 +9,7 @@ from logic.algorithm_runner import AlgorithmRunner
 from logic.items_claimer import ItemsClaimer
 from logic.producer.solver_router_producer import SolverRouterProducer
 from logic.rabbit_channel_context import RabbitChannelContext
+from logic.solution_reporter import SolutionReporter
 from logic.solver.solver_loader import SolverLoader
 from models.rabbit_connection_params import RabbitConnectionParams
 from models.redis_connection_params import RedisConnectionParams
@@ -79,3 +80,13 @@ def get_rabbit_channel_context(
     connection_params: RabbitConnectionParams = get_rabbit_connection_params(),
 ) -> RabbitChannelContext:
     return RabbitChannelContext(connection_params)
+
+
+def get_solutions_channel_prefix() -> str:
+    return os.getenv("SOLUTIONS_CHANNEL_PREFIX", "solutions")
+
+
+def get_solution_reporter(
+    redis: Redis = get_redis(), solutions_channel_prefix: str = get_solutions_channel_prefix()
+) -> SolutionReporter:
+    return SolutionReporter(redis, solutions_channel_prefix)

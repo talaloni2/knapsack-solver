@@ -6,9 +6,10 @@ import aio_pika.abc
 from logic.algorithm_runner import AlgorithmRunner
 from logic.items_claimer import ItemsClaimer
 from logic.rabbit_channel_context import RabbitChannelContext
-from logic.solution_reporter import SolutionReporter, SolutionReportCause
+from logic.solution_reporter import SolutionReporter
 from models.knapsack_item import KnapsackItem
 from models.knapsack_solver_instance_dto import SolverInstanceRequest
+from models.solution_report import SolutionReportCause
 
 
 class SolverInstanceConsumer:
@@ -58,7 +59,7 @@ class SolverInstanceConsumer:
 
             solution = self._algo_runner.run_algorithm(claimed_items, request.volume, request.algorithm)
             await self._release_non_needed_items(claimed_items, solution)
-            await self._solution_reporter.report_solutions([solution], request.knapsack_id)
+            await self._solution_reporter.report_solution_suggestions([solution], request.knapsack_id)
         except Exception as e:
             print(e)
 

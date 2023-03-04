@@ -49,4 +49,4 @@ async def test_solver_consumer_consume(random_queue_name: str):
     algorithm_runner.run_algorithm.assert_called_once()
     items_claimer.claim_items.assert_called_once()
     items_claimer.release_claims.assert_called_once()
-    solution_reporter.report_solutions.assert_called_once()
+    solution_reporter.report_solution_suggestions.assert_called_once()
