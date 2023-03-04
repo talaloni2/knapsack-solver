@@ -11,15 +11,16 @@ from logic.solution_reporter import SolutionReporter
 from models.algorithms import Algorithms
 from models.knapsack_item import KnapsackItem
 from models.knapsack_solver_instance_dto import SolverInstanceRequest
-from component_factory import get_rabbit_connection_params
+from component_factory import get_rabbit_connection_params, get_rabbit_channel_context
 from test.utils import get_random_string
 
 
 @pytest.mark.asyncio
-async def test_solver_consumer(random_queue_name: str):
-    expected_result = [KnapsackItem(id=get_random_string(), value=1, volume=1)]
+async def test_solver_consumer_consume(random_queue_name: str):
+    expected_result = [KnapsackItem(id=get_random_string(), value=2, volume=1)]
+    non_accepted_items = [KnapsackItem(id=get_random_string(), value=1, volume=1)]
     request = SolverInstanceRequest(
-        items=expected_result,
+        items=expected_result + non_accepted_items,
         volume=1,
         knapsack_id=get_random_string(),
         algorithm=Algorithms.FIRST_FIT,
@@ -34,7 +35,7 @@ async def test_solver_consumer(random_queue_name: str):
     algorithm_runner = MagicMock(AlgorithmRunner)
 
     consumer = SolverInstanceConsumer(
-        get_rabbit_connection_params(),
+        get_rabbit_channel_context(),
         algorithm_runner,
         items_claimer,
         solution_reporter,
@@ -47,4 +48,5 @@ async def test_solver_consumer(random_queue_name: str):
 
     algorithm_runner.run_algorithm.assert_called_once()
     items_claimer.claim_items.assert_called_once()
+    items_claimer.release_claims.assert_called_once()
     solution_reporter.report_solutions.assert_called_once()

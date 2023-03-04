@@ -1,7 +1,5 @@
-import asyncio
 import os
 
-import aio_pika
 import aioredis
 from aioredis import Redis
 from fastapi import Depends
@@ -10,6 +8,7 @@ from logic.algorithm_decider import AlgorithmDecider
 from logic.algorithm_runner import AlgorithmRunner
 from logic.items_claimer import ItemsClaimer
 from logic.producer.solver_router_producer import SolverRouterProducer
+from logic.rabbit_channel_context import RabbitChannelContext
 from logic.solver.solver_loader import SolverLoader
 from models.rabbit_connection_params import RabbitConnectionParams
 from models.redis_connection_params import RedisConnectionParams
@@ -65,11 +64,16 @@ def get_redis(connection_params: RedisConnectionParams = get_redis_connection_pa
     return aioredis.from_url(f"redis://{host}:{port}")
 
 
-def get_claimed_items_hash_name():
-    return os.getenv("CLAIMED_ITEMS_HASH_NAME", "claimed_items")
+def items_claim_hash():
+    return os.getenv("RUNNING_SOLVERS_CLAIM_HASH", "running_solvers_claims")
 
 
 def get_items_claimer(
-    redis: Redis = get_redis(), claimed_items_hash_name: str = get_claimed_items_hash_name()
+    redis: Redis = get_redis(),
+    items_claim_hash_name: str = items_claim_hash(),
 ) -> ItemsClaimer:
-    return ItemsClaimer(redis, claimed_items_hash_name)
+    return ItemsClaimer(redis, items_claim_hash_name)
+
+
+def get_rabbit_channel_context(connection_params: RabbitConnectionParams = get_rabbit_connection_params()) -> RabbitChannelContext:
+    return RabbitChannelContext(connection_params)

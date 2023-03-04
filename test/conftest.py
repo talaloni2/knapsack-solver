@@ -50,7 +50,7 @@ async def hash_cleaner():
 
 
 @pytest.fixture
-async def random_hash_name(hash_cleaner: list) -> str:
+async def items_claim_hash_name(hash_cleaner: list) -> str:
     hash_name = get_random_string()
     hash_cleaner.append(hash_name)
     return hash_name
