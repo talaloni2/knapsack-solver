@@ -75,5 +75,7 @@ def get_items_claimer(
     return ItemsClaimer(redis, items_claim_hash_name)
 
 
-def get_rabbit_channel_context(connection_params: RabbitConnectionParams = get_rabbit_connection_params()) -> RabbitChannelContext:
+def get_rabbit_channel_context(
+    connection_params: RabbitConnectionParams = get_rabbit_connection_params(),
+) -> RabbitChannelContext:
     return RabbitChannelContext(connection_params)
