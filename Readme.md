@@ -9,3 +9,6 @@ First run these 2 commands:<br>
 
 Then, execute the following command(while on the repo dir):<br>
 <code>pytest</code>
+
+##Changing default ports
+Take a look at <code>component_factory.py</code> to see what environment variables needs to be changed in order for this component to work properly. 
