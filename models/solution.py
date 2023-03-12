@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 
 from models.base_model import BaseModel
@@ -10,5 +11,10 @@ class SolutionReportCause(str, Enum):
 
 
 class SolutionReport(BaseModel):
-    solutions: list[list[KnapsackItem]]
+    # solutions: list[list[KnapsackItem]]
     cause: SolutionReportCause
+
+
+class SuggestedSolution(BaseModel):
+    time: datetime
+    solutions: dict[str, list[KnapsackItem]]

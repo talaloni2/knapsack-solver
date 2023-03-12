@@ -86,7 +86,13 @@ def get_solutions_channel_prefix() -> str:
     return os.getenv("SOLUTIONS_CHANNEL_PREFIX", "solutions")
 
 
+def get_suggested_solutions_hash_name() -> str:
+    return os.getenv("SOLUTION_SUGGESTIONS_HASH_NAME", "solution_suggestions")
+
+
 def get_solution_reporter(
-    redis: Redis = get_redis(), solutions_channel_prefix: str = get_solutions_channel_prefix()
+    redis: Redis = get_redis(),
+    solutions_channel_prefix: str = get_solutions_channel_prefix(),
+    solution_suggestions_hash_name: str = get_suggested_solutions_hash_name(),
 ) -> SolutionReporter:
-    return SolutionReporter(redis, solutions_channel_prefix)
+    return SolutionReporter(redis, solutions_channel_prefix, solution_suggestions_hash_name)

@@ -9,7 +9,7 @@ from logic.rabbit_channel_context import RabbitChannelContext
 from logic.solution_reporter import SolutionReporter
 from models.knapsack_item import KnapsackItem
 from models.knapsack_solver_instance_dto import SolverInstanceRequest
-from models.solution_report import SolutionReportCause
+from models.solution import SolutionReportCause
 
 
 class SolverInstanceConsumer:
