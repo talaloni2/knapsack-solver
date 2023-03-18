@@ -1,4 +1,5 @@
 import json
+from enum import Enum
 from typing import Optional
 from uuid import uuid4
 
@@ -8,6 +9,7 @@ from logic.claims_service import ClaimsService
 from logic.time_service import TimeService
 from models.knapsack_item import KnapsackItem
 from models.solution import SuggestedSolution, AcceptedSolution
+from models.suggested_solutions_actions_statuses import AcceptResult, RejectResult
 
 
 class SuggestedSolutionsService:
@@ -31,38 +33,38 @@ class SuggestedSolutionsService:
         )
         await self._redis.hset(self._solution_suggestions_hash_name, knapsack_id, solution_suggestion.json())
 
-    async def accept_suggested_solution(self, knapsack_id: str, solution_id: str) -> bool:
+    async def accept_suggested_solution(self, knapsack_id: str, solution_id: str) -> AcceptResult:
         is_suggestions_claimed = await self._claims_service.claim_suggested_solutions(knapsack_id)
         if not is_suggestions_claimed:
-            return False
+            return AcceptResult.CLAIM_FAILED
 
         try:
             solutions_suggestions = await self.get_solutions(knapsack_id)
             if not solutions_suggestions:
-                return False
+                return AcceptResult.SOLUTION_NOT_EXISTS
             accepted_solution_items: list[KnapsackItem] = solutions_suggestions.solutions[solution_id]
             await self._release_claims_of_non_accepted_solutions(accepted_solution_items, solutions_suggestions)
             await self._perform_accept_single_solution(accepted_solution_items, knapsack_id)
         finally:
             await self._claims_service.release_claim_suggested_solutions(knapsack_id)
-        return True
+        return AcceptResult.ACCEPT_SUCCESS
 
-    async def reject_suggested_solutions(self, knapsack_id: str) -> bool:
+    async def reject_suggested_solutions(self, knapsack_id: str) -> RejectResult:
         is_suggestions_claimed = await self._claims_service.claim_suggested_solutions(knapsack_id)
         if not is_suggestions_claimed:
-            return False
+            return RejectResult.CLAIM_FAILED
 
         try:
             solutions_suggestions = await self.get_solutions(knapsack_id)
             if not solutions_suggestions:
-                return False
+                return RejectResult.SUGGESTION_NOT_EXISTS
             await self._release_claims_of_non_accepted_solutions(
                 accepted_solution=[], solutions_suggestions=solutions_suggestions
             )
             await self._remove_solution_suggestion(knapsack_id)
         finally:
             await self._claims_service.release_claim_suggested_solutions(knapsack_id)
-        return True
+        return RejectResult.REJECT_SUCCESS
 
     async def is_solution_exists(self, knapsack_id: str, solution_id: str) -> bool:
         solutions_suggestions = await self.get_solutions(knapsack_id)

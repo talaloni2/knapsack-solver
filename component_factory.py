@@ -58,7 +58,7 @@ def get_redis_api(connection_params: RedisConnectionParams = Depends(get_redis_c
     return get_redis(connection_params)
 
 
-def get_items_claimer_api(redis: Redis = Depends(get_redis_api)) -> ClaimsService:
+def get_claims_service_api(redis: Redis = Depends(get_redis_api)) -> ClaimsService:
     return get_claims_service(redis)
 
 
@@ -111,6 +111,18 @@ def get_suggested_solutions_service(
     time_service: TimeService = get_time_service(),
     solution_suggestions_hash_name: str = get_suggested_solutions_hash_name(),
     accepted_solutions_list_name: str = get_accepted_solutions_list_name(),
+) -> SuggestedSolutionsService:
+    return SuggestedSolutionsService(
+        redis, claims_service, time_service, solution_suggestions_hash_name, accepted_solutions_list_name
+    )
+
+
+def get_suggested_solutions_service_api(
+    redis: Redis = Depends(get_redis_api),
+    claims_service: ClaimsService = Depends(get_claims_service_api),
+    time_service: TimeService = Depends(get_time_service),
+    solution_suggestions_hash_name: str = Depends(get_suggested_solutions_hash_name),
+    accepted_solutions_list_name: str = Depends(get_accepted_solutions_list_name),
 ) -> SuggestedSolutionsService:
     return SuggestedSolutionsService(
         redis, claims_service, time_service, solution_suggestions_hash_name, accepted_solutions_list_name

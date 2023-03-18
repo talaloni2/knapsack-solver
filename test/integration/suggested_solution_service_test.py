@@ -10,32 +10,8 @@ from logic.suggested_solution_service import SuggestedSolutionsService
 from logic.time_service import TimeService
 from models.knapsack_item import KnapsackItem
 from models.solution import SuggestedSolution, AcceptedSolution
+from models.suggested_solutions_actions_statuses import RejectResult, AcceptResult
 from test.utils import get_random_string
-
-
-@pytest.fixture
-def claims_service_mock() -> ClaimsService:
-    return AsyncMock(ClaimsService)
-
-
-@pytest.fixture
-def redis_mock() -> AsyncMock:
-    mock = AsyncMock(Redis)
-    mock.hset = AsyncMock()
-    return mock
-
-
-@pytest.fixture
-def solution_suggestions_service_with_mocks(
-    redis_mock: Redis,
-    claims_service_mock: ClaimsService,
-    time_service_mock: TimeService,
-    suggested_solutions_hash_name: str,
-    accepted_solutions_list_name: str,
-) -> SuggestedSolutionsService:
-    return SuggestedSolutionsService(
-        redis_mock, claims_service_mock, time_service_mock, suggested_solutions_hash_name, accepted_solutions_list_name
-    )
 
 
 @pytest.mark.asyncio
@@ -98,9 +74,9 @@ async def test_accept_suggested_solution(
     redis_mock.rpush = AsyncMock()
     redis_mock.hdel = AsyncMock()
 
-    accepted = await solution_suggestions_service_with_mocks.accept_suggested_solution(knapsack_id, chosen_solution_id)
+    result = await solution_suggestions_service_with_mocks.accept_suggested_solution(knapsack_id, chosen_solution_id)
 
-    assert accepted is True
+    assert AcceptResult.ACCEPT_SUCCESS == result
     claims_service_mock.claim_suggested_solutions.assert_called_once_with(knapsack_id)
     solution_suggestions_service_with_mocks.get_solutions.assert_called_once_with(knapsack_id)
     claims_service_mock.release_items_claims.assert_called_once_with([first_released_item, second_released_item])
@@ -126,9 +102,9 @@ async def test_accept_suggested_solution_solution_claim_failed(
     claims_service_mock.release_items_claims = AsyncMock()
     claims_service_mock.release_claim_suggested_solutions = AsyncMock()
 
-    accepted = await solution_suggestions_service_with_mocks.accept_suggested_solution(knapsack_id, chosen_solution_id)
+    result = await solution_suggestions_service_with_mocks.accept_suggested_solution(knapsack_id, chosen_solution_id)
 
-    assert accepted is False
+    assert AcceptResult.CLAIM_FAILED == result
     claims_service_mock.claim_suggested_solutions.assert_called_once_with(knapsack_id)
     claims_service_mock.release_items_claims.assert_not_called()
     claims_service_mock.release_claim_suggested_solutions.assert_not_called()
@@ -151,9 +127,9 @@ async def test_accept_suggested_solution_solution_deleted(
     redis_mock.rpush = AsyncMock()
     redis_mock.hdel = AsyncMock()
 
-    accepted = await solution_suggestions_service_with_mocks.accept_suggested_solution(knapsack_id, chosen_solution_id)
+    result = await solution_suggestions_service_with_mocks.accept_suggested_solution(knapsack_id, chosen_solution_id)
 
-    assert accepted is False
+    assert AcceptResult.SOLUTION_NOT_EXISTS == result
     claims_service_mock.claim_suggested_solutions.assert_called_once_with(knapsack_id)
     solution_suggestions_service_with_mocks.get_solutions.assert_called_once_with(knapsack_id)
     claims_service_mock.release_items_claims.assert_not_called()
@@ -261,9 +237,9 @@ async def test_reject_suggested_solutions(
     claims_service_mock.release_claim_suggested_solutions = AsyncMock()
     redis_mock.hdel = AsyncMock()
 
-    rejected = await solution_suggestions_service_with_mocks.reject_suggested_solutions(knapsack_id)
+    result = await solution_suggestions_service_with_mocks.reject_suggested_solutions(knapsack_id)
 
-    assert rejected is True
+    assert RejectResult.REJECT_SUCCESS == result
     claims_service_mock.claim_suggested_solutions.assert_called_once_with(knapsack_id)
     solution_suggestions_service_with_mocks.get_solutions.assert_called_once_with(knapsack_id)
     claims_service_mock.release_items_claims.assert_called_once_with([first_released_item, second_released_item])
@@ -284,9 +260,9 @@ async def test_reject_suggested_solution_solution_claim_failed(
     claims_service_mock.release_items_claims = AsyncMock()
     claims_service_mock.release_claim_suggested_solutions = AsyncMock()
 
-    rejected = await solution_suggestions_service_with_mocks.reject_suggested_solutions(knapsack_id)
+    result = await solution_suggestions_service_with_mocks.reject_suggested_solutions(knapsack_id)
 
-    assert rejected is False
+    assert RejectResult.CLAIM_FAILED == result
     claims_service_mock.claim_suggested_solutions.assert_called_once_with(knapsack_id)
     claims_service_mock.release_items_claims.assert_not_called()
     claims_service_mock.release_claim_suggested_solutions.assert_not_called()
@@ -307,9 +283,9 @@ async def test_reject_suggested_solution_solution_deleted(
     claims_service_mock.release_claim_suggested_solutions = AsyncMock()
     redis_mock.hdel = AsyncMock()
 
-    rejected = await solution_suggestions_service_with_mocks.reject_suggested_solutions(knapsack_id)
+    result = await solution_suggestions_service_with_mocks.reject_suggested_solutions(knapsack_id)
 
-    assert rejected is False
+    assert RejectResult.SUGGESTION_NOT_EXISTS == result
     claims_service_mock.claim_suggested_solutions.assert_called_once_with(knapsack_id)
     solution_suggestions_service_with_mocks.get_solutions.assert_called_once_with(knapsack_id)
     claims_service_mock.release_items_claims.assert_not_called()

@@ -1,11 +1,12 @@
 import asyncio
 from datetime import datetime
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, AsyncMock
 from uuid import uuid4
 
 import aio_pika
 import aioredis
 import pytest
+from aioredis import Redis
 from fastapi.testclient import TestClient
 
 from component_factory import get_rabbit_connection_params, get_redis_connection_params, get_claims_service
@@ -138,4 +139,29 @@ def solution_suggestions_service(
 ) -> SuggestedSolutionsService:
     return SuggestedSolutionsService(
         redis_client, claims_service, time_service_mock, suggested_solutions_hash_name, accepted_solutions_list_name
+    )
+
+
+@pytest.fixture
+def claims_service_mock() -> ClaimsService:
+    return AsyncMock(ClaimsService)
+
+
+@pytest.fixture
+def redis_mock() -> AsyncMock:
+    mock = AsyncMock(Redis)
+    mock.hset = AsyncMock()
+    return mock
+
+
+@pytest.fixture
+def solution_suggestions_service_with_mocks(
+    redis_mock: Redis,
+    claims_service_mock: ClaimsService,
+    time_service_mock: TimeService,
+    suggested_solutions_hash_name: str,
+    accepted_solutions_list_name: str,
+) -> SuggestedSolutionsService:
+    return SuggestedSolutionsService(
+        redis_mock, claims_service_mock, time_service_mock, suggested_solutions_hash_name, accepted_solutions_list_name
     )
