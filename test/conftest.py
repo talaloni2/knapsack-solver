@@ -1,11 +1,17 @@
 import asyncio
+from datetime import datetime
+from unittest.mock import MagicMock
+from uuid import uuid4
 
 import aio_pika
 import aioredis
 import pytest
 from fastapi.testclient import TestClient
 
-from component_factory import get_rabbit_connection_params, get_redis_connection_params
+from component_factory import get_rabbit_connection_params, get_redis_connection_params, get_claims_service
+from logic.claims_service import ClaimsService
+from logic.suggested_solution_service import SuggestedSolutionsService
+from logic.time_service import TimeService
 from server import app
 from test.utils import get_random_string
 
@@ -39,14 +45,11 @@ async def random_queue_name(queues_cleaner: list) -> str:
 
 
 @pytest.fixture
-async def hash_cleaner():
-    host, port = get_redis_connection_params()
-    redis = aioredis.from_url(f"redis://{host}:{port}")
-
+async def hash_cleaner(redis_client):
     created_hashes = []
     yield created_hashes
 
-    await redis.delete(*created_hashes)
+    await redis_client.delete(*created_hashes)
 
 
 @pytest.fixture
@@ -64,3 +67,75 @@ def event_loop():
         loop = asyncio.new_event_loop()
     yield loop
     loop.close()
+
+
+@pytest.fixture
+def knapsack_id() -> str:
+    return get_random_string()
+
+
+@pytest.fixture
+def channel_prefix() -> str:
+    return "solutions_test"
+
+
+@pytest.fixture
+async def redis_subscriber(channel_prefix: str, knapsack_id: str) -> aioredis.client.PubSub:
+    host, port = get_redis_connection_params()
+    redis = aioredis.from_url(f"redis://{host}:{port}")
+
+    async with redis.pubsub() as pubsub:
+        channel_name: str = f"{channel_prefix}:{knapsack_id}"
+        await pubsub.subscribe(channel_name)
+        yield pubsub
+        await pubsub.unsubscribe(channel_name)
+
+
+@pytest.fixture
+def redis_client() -> aioredis.Redis:
+    host, port = get_redis_connection_params()
+    return aioredis.from_url(f"redis://{host}:{port}")
+
+
+@pytest.fixture
+def claims_service(hash_cleaner, redis_client) -> ClaimsService:
+    items_claim_hash_name: str = get_random_string()
+    suggested_solutions_claims_hash_name: str = get_random_string()
+    hash_cleaner.append(items_claim_hash_name)
+    hash_cleaner.append(suggested_solutions_claims_hash_name)
+    return get_claims_service(redis_client, items_claim_hash_name, suggested_solutions_claims_hash_name)
+
+
+@pytest.fixture
+def time_service_mock() -> MagicMock:
+    m = MagicMock(TimeService)
+    m.now = MagicMock(return_value=datetime.now())
+    return m
+
+
+@pytest.fixture
+def suggested_solutions_hash_name(hash_cleaner) -> str:
+    suggested_solutions_hash_name = get_random_string()
+    hash_cleaner.append(suggested_solutions_hash_name)
+    return suggested_solutions_hash_name
+
+
+@pytest.fixture
+def accepted_solutions_list_name(hash_cleaner) -> str:
+    accepted_solutions_list_name = get_random_string()
+    hash_cleaner.append(accepted_solutions_list_name)
+    return accepted_solutions_list_name
+
+
+@pytest.fixture
+def solution_suggestions_service(
+    hash_cleaner,
+    redis_client,
+    claims_service,
+    time_service_mock,
+    suggested_solutions_hash_name,
+    accepted_solutions_list_name,
+) -> SuggestedSolutionsService:
+    return SuggestedSolutionsService(
+        redis_client, claims_service, time_service_mock, suggested_solutions_hash_name, accepted_solutions_list_name
+    )

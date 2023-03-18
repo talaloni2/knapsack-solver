@@ -1,11 +1,10 @@
-import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from logic.algorithm_runner import AlgorithmRunner
+from logic.claims_service import ClaimsService
 from logic.consumer.solver_instance_consumer import SolverInstanceConsumer
-from logic.items_claimer import ItemsClaimer
 from logic.rabbit_channel_context import RabbitChannelContext
 from logic.solution_reporter import SolutionReporter
 from models.algorithms import Algorithms
@@ -27,7 +26,7 @@ async def test_solver_consumer_claims(random_queue_name: str):
     )
 
     channel_context = await _mock_channel_with_one_message_in_queue(request)
-    items_claimer = AsyncMock(ItemsClaimer)
+    items_claimer = AsyncMock(ClaimsService)
     items_claimer.claim_items = AsyncMock(return_value=solution_request_items)
     solution_reporter = AsyncMock(SolutionReporter)
     algorithm_runner = MagicMock(AlgorithmRunner)
@@ -40,7 +39,7 @@ async def test_solver_consumer_claims(random_queue_name: str):
 
     algorithm_runner.run_algorithm.assert_called_once()
     items_claimer.claim_items.assert_called_once()
-    items_claimer.release_claims.assert_called_once_with(non_accepted_items)
+    items_claimer.release_items_claims.assert_called_once_with(non_accepted_items)
     solution_reporter.report_solution_suggestions.assert_called_once()
 
 

@@ -11,10 +11,15 @@ class SolutionReportCause(str, Enum):
 
 
 class SolutionReport(BaseModel):
-    # solutions: list[list[KnapsackItem]]
     cause: SolutionReportCause
 
 
 class SuggestedSolution(BaseModel):
     time: datetime
     solutions: dict[str, list[KnapsackItem]]
+
+
+class AcceptedSolution(BaseModel):
+    time: datetime
+    solution: list[KnapsackItem]
+    knapsack_id: str

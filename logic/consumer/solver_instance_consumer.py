@@ -4,7 +4,7 @@ import aio_pika
 import aio_pika.abc
 
 from logic.algorithm_runner import AlgorithmRunner
-from logic.items_claimer import ItemsClaimer
+from logic.claims_service import ClaimsService
 from logic.rabbit_channel_context import RabbitChannelContext
 from logic.solution_reporter import SolutionReporter
 from models.knapsack_item import KnapsackItem
@@ -17,7 +17,7 @@ class SolverInstanceConsumer:
         self,
         channel_context: RabbitChannelContext,
         algo_runner: AlgorithmRunner,
-        items_claimer: ItemsClaimer,
+        items_claimer: ClaimsService,
         solution_reporter: SolutionReporter,
     ):
         self._channel_context = channel_context
@@ -67,7 +67,7 @@ class SolverInstanceConsumer:
         solution_ids = {n.id for n in solution}
         released_items = [i for i in claimed_items if i.id not in solution_ids]
 
-        await self._items_claimer.release_claims(released_items)
+        await self._items_claimer.release_items_claims(released_items)
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self._channel_context.__aexit__(exc_type, exc_val, exc_tb)
