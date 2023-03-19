@@ -3,16 +3,19 @@ import os
 import aioredis
 from aioredis import Redis
 from fastapi import Depends
+from fastapi.requests import Request
 
 from logic.algorithm_decider import AlgorithmDecider
 from logic.algorithm_runner import AlgorithmRunner
 from logic.claims_service import ClaimsService
 from logic.producer.solver_router_producer import SolverRouterProducer
 from logic.rabbit_channel_context import RabbitChannelContext
+from logic.solution_report_waiter import SolutionReportWaiter
 from logic.solution_reporter import SolutionReporter
 from logic.solver.solver_loader import SolverLoader
 from logic.suggested_solution_service import SuggestedSolutionsService
 from logic.time_service import TimeService
+from models.knapsack_router_dto import RouterSolveRequest
 from models.rabbit_connection_params import RabbitConnectionParams
 from models.redis_connection_params import RedisConnectionParams
 
@@ -135,3 +138,11 @@ def get_solution_reporter(
     suggested_solutions_service: SuggestedSolutionsService = get_suggested_solutions_service(),
 ) -> SolutionReporter:
     return SolutionReporter(redis, solutions_channel_prefix, suggested_solutions_service)
+
+
+def get_solution_report_waiter_api_route_solve(
+    request: RouterSolveRequest,
+    redis: Redis = Depends(get_redis_api),
+    solutions_channel_prefix: str = Depends(get_solutions_channel_prefix),
+):
+    return SolutionReportWaiter(redis, solutions_channel_prefix, request.knapsack_id)

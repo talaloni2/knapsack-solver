@@ -8,6 +8,7 @@ import aioredis
 import pytest
 from aioredis import Redis
 from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 from component_factory import get_rabbit_connection_params, get_redis_connection_params, get_claims_service
 from logic.claims_service import ClaimsService
@@ -18,8 +19,9 @@ from test.utils import get_random_string
 
 
 @pytest.fixture()
-def test_client() -> TestClient:
-    return TestClient(app)
+async def test_client() -> AsyncClient:
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        yield client
 
 
 @pytest.fixture
@@ -81,15 +83,16 @@ def channel_prefix() -> str:
 
 
 @pytest.fixture
-async def redis_subscriber(channel_prefix: str, knapsack_id: str) -> aioredis.client.PubSub:
-    host, port = get_redis_connection_params()
-    redis = aioredis.from_url(f"redis://{host}:{port}")
+def solution_reports_channel_name(channel_prefix: str, knapsack_id: str):
+    return f"{channel_prefix}:{knapsack_id}"
 
-    async with redis.pubsub() as pubsub:
-        channel_name: str = f"{channel_prefix}:{knapsack_id}"
-        await pubsub.subscribe(channel_name)
+
+@pytest.fixture
+async def redis_subscriber(redis_client: Redis, solution_reports_channel_name: str) -> aioredis.client.PubSub:
+    async with redis_client.pubsub() as pubsub:
+        await pubsub.subscribe(solution_reports_channel_name)
         yield pubsub
-        await pubsub.unsubscribe(channel_name)
+        await pubsub.unsubscribe(solution_reports_channel_name)
 
 
 @pytest.fixture
