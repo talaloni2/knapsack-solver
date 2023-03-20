@@ -5,7 +5,7 @@ import pytest
 
 from logic.algorithm_runner import AlgorithmRunner
 from logic.consumer.solver_instance_consumer import SolverInstanceConsumer
-from logic.items_claimer import ItemsClaimer
+from logic.claims_service import ClaimsService
 from logic.producer.solver_router_producer import SolverRouterProducer
 from logic.solution_reporter import SolutionReporter
 from models.algorithms import Algorithms
@@ -30,7 +30,7 @@ async def test_solver_consumer_consume(random_queue_name: str):
     async with producer:
         await producer.produce_solver_instance_request(request)
 
-    items_claimer = AsyncMock(ItemsClaimer)
+    items_claimer = AsyncMock(ClaimsService)
     solution_reporter = AsyncMock(SolutionReporter)
     algorithm_runner = MagicMock(AlgorithmRunner)
 
@@ -48,5 +48,5 @@ async def test_solver_consumer_consume(random_queue_name: str):
 
     algorithm_runner.run_algorithm.assert_called_once()
     items_claimer.claim_items.assert_called_once()
-    items_claimer.release_claims.assert_called_once()
-    solution_reporter.report_solutions.assert_called_once()
+    items_claimer.release_items_claims.assert_called_once()
+    solution_reporter.report_solution_suggestions.assert_called_once()

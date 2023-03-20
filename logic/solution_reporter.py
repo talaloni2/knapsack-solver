@@ -1,22 +1,28 @@
 from __future__ import annotations
-from enum import Enum
 
+from aioredis import Redis
+
+from logic.suggested_solution_service import SuggestedSolutionsService
 from models.knapsack_item import KnapsackItem
-
-
-class SolutionReportCause(str, Enum):
-    NO_ITEM_CLAIMED = "no_item_claimed"
-    SOLUTION_FOUND = "solution_found"
-
-
-def get_solution_reporter() -> SolutionReporter:
-    return SolutionReporter()
+from models.solution import SolutionReportCause, SolutionReport
 
 
 class SolutionReporter:
-    async def report_solutions(self, solutions: list[list[KnapsackItem]], knapsack_id: str):
-        """STUB"""
-        pass
+    def __init__(
+        self, redis: Redis, solutions_channel_prefix: str, suggested_solution_service: SuggestedSolutionsService
+    ):
+        self._redis = redis
+        self._solutions_channel_prefix = solutions_channel_prefix
+        self._suggested_solution_service = suggested_solution_service
+
+    async def report_solution_suggestions(self, solutions: list[list[KnapsackItem]], knapsack_id: str):
+        solution_report = SolutionReport(cause=SolutionReportCause.SOLUTION_FOUND)
+        await self._suggested_solution_service.register_suggested_solutions(solutions, knapsack_id)
+        await self._redis.publish(self._channel_name(knapsack_id), solution_report.json())
 
     async def report_error(self, knapsack_id: str, error: SolutionReportCause):
-        pass
+        solution_report = SolutionReport(cause=error)
+        await self._redis.publish(self._channel_name(knapsack_id), solution_report.json())
+
+    def _channel_name(self, knapsack_id: str):
+        return f"{self._solutions_channel_prefix}:{knapsack_id}"
