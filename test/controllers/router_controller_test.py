@@ -34,13 +34,19 @@ from test.utils import get_random_string
 #     algo_decider.decide.assert_called_once()
 #     solve_request_producer.produce_solver_instance_request.assert_called_once()
 
+
 @pytest.fixture
 def solution_reports_waiter_mock() -> SolutionReportWaiter:
     return AsyncMock(SolutionReportWaiter)
 
 
 @pytest.mark.asyncio
-async def test_route_solve_solution_found(time_service_mock: TimeService, solution_reports_waiter_mock: SolutionReportWaiter, solution_suggestions_service_with_mocks: SuggestedSolutionsService, knapsack_id):
+async def test_route_solve_solution_found(
+    time_service_mock: TimeService,
+    solution_reports_waiter_mock: SolutionReportWaiter,
+    solution_suggestions_service_with_mocks: SuggestedSolutionsService,
+    knapsack_id,
+):
     expected_items = [KnapsackItem(id=get_random_string(), value=10, volume=10)]
     solution_id = get_random_string()
     expected_suggestion = SuggestedSolution(time=time_service_mock.now(), solutions={solution_id: expected_items})
@@ -48,10 +54,18 @@ async def test_route_solve_solution_found(time_service_mock: TimeService, soluti
     solve_request_producer = AsyncMock(SolverRouterProducer)
     algo_decider = AsyncMock(AlgorithmDecider)
     algo_decider.decide = AsyncMock(return_value=Algorithms.FIRST_FIT)
-    solution_reports_waiter_mock.wait_for_solution_report = AsyncMock(return_value=SolutionReport(cause=SolutionReportCause.SOLUTION_FOUND))
+    solution_reports_waiter_mock.wait_for_solution_report = AsyncMock(
+        return_value=SolutionReport(cause=SolutionReportCause.SOLUTION_FOUND)
+    )
     solution_suggestions_service_with_mocks.get_solutions = AsyncMock(return_value=expected_suggestion)
 
-    response = await route_solve(request, algo_decider, solve_request_producer, solution_reports_waiter_mock, solution_suggestions_service_with_mocks)
+    response = await route_solve(
+        request,
+        algo_decider,
+        solve_request_producer,
+        solution_reports_waiter_mock,
+        solution_suggestions_service_with_mocks,
+    )
 
     algo_decider.decide.assert_called_once()
     solve_request_producer.produce_solver_instance_request.assert_called_once()
@@ -61,17 +75,30 @@ async def test_route_solve_solution_found(time_service_mock: TimeService, soluti
 
 
 @pytest.mark.asyncio
-async def test_route_solve_solution_found(time_service_mock: TimeService, solution_reports_waiter_mock: SolutionReportWaiter, solution_suggestions_service_with_mocks: SuggestedSolutionsService, knapsack_id):
+async def test_route_solve_no_items_claimed(
+    time_service_mock: TimeService,
+    solution_reports_waiter_mock: SolutionReportWaiter,
+    solution_suggestions_service_with_mocks: SuggestedSolutionsService,
+    knapsack_id,
+):
     items = [KnapsackItem(id=get_random_string(), value=10, volume=10)]
     request = RouterSolveRequest(items=items, volume=10, knapsack_id=knapsack_id)
     solve_request_producer = AsyncMock(SolverRouterProducer)
     algo_decider = AsyncMock(AlgorithmDecider)
     algo_decider.decide = AsyncMock(return_value=Algorithms.FIRST_FIT)
-    solution_reports_waiter_mock.wait_for_solution_report = AsyncMock(return_value=SolutionReport(cause=SolutionReportCause.NO_ITEM_CLAIMED))
+    solution_reports_waiter_mock.wait_for_solution_report = AsyncMock(
+        return_value=SolutionReport(cause=SolutionReportCause.NO_ITEM_CLAIMED)
+    )
     solution_suggestions_service_with_mocks.get_solutions = AsyncMock()
 
     # noinspection PyTypeChecker
-    response: JSONResponse = await route_solve(request, algo_decider, solve_request_producer, solution_reports_waiter_mock, solution_suggestions_service_with_mocks)
+    response: JSONResponse = await route_solve(
+        request,
+        algo_decider,
+        solve_request_producer,
+        solution_reports_waiter_mock,
+        solution_suggestions_service_with_mocks,
+    )
 
     algo_decider.decide.assert_called_once()
     solve_request_producer.produce_solver_instance_request.assert_called_once()

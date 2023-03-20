@@ -25,7 +25,14 @@ def override_solver_queue(queues_cleaner):
 
 
 @pytest.mark.anyio
-async def test_router_controller_endpoint_sanity(test_client: AsyncClient, override_solver_queue: None, redis_client: Redis, solution_reports_channel_name: str, knapsack_id: str, solution_suggestions_service: SuggestedSolutionsService):
+async def test_router_controller_endpoint_sanity(
+    test_client: AsyncClient,
+    override_solver_queue: None,
+    redis_client: Redis,
+    solution_reports_channel_name: str,
+    knapsack_id: str,
+    solution_suggestions_service: SuggestedSolutionsService,
+):
     expected_item = KnapsackItem(id=get_random_string(), value=10, volume=10)
     request = RouterSolveRequest(items=[expected_item], volume=10, knapsack_id=knapsack_id)
     request_task = asyncio.create_task(test_client.post("/knapsack-router/solve", json=request.dict()))
