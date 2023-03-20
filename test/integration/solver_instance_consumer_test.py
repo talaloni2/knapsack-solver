@@ -8,6 +8,7 @@ from logic.consumer.solver_instance_consumer import SolverInstanceConsumer
 from logic.claims_service import ClaimsService
 from logic.producer.solver_router_producer import SolverRouterProducer
 from logic.solution_reporter import SolutionReporter
+from logic.suggested_solution_service import SuggestedSolutionsService
 from models.algorithms import Algorithms
 from models.knapsack_item import KnapsackItem
 from models.knapsack_solver_instance_dto import SolverInstanceRequest
@@ -33,12 +34,15 @@ async def test_solver_consumer_consume(random_queue_name: str):
     items_claimer = AsyncMock(ClaimsService)
     solution_reporter = AsyncMock(SolutionReporter)
     algorithm_runner = MagicMock(AlgorithmRunner)
+    solution_suggestion_service = AsyncMock(SuggestedSolutionsService)
+    solution_suggestion_service.get_solutions = AsyncMock(return_value=None)
 
     consumer = SolverInstanceConsumer(
         get_rabbit_channel_context(),
         algorithm_runner,
         items_claimer,
         solution_reporter,
+        solution_suggestion_service,
     )
 
     async with consumer:

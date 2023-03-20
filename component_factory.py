@@ -78,12 +78,19 @@ def suggested_solutions_claims_hash():
     return os.getenv("SUGGESTED_SOLUTIONS_CLAIM_HASH", "suggested_solutions_claims")
 
 
+def running_knapsack_claims_hash():
+    return os.getenv("RUNNING_KNAPSACK_CLAIM_HASH", "running_knapsack_claims")
+
+
 def get_claims_service(
     redis: Redis = get_redis(),
     items_claim_hash_name: str = items_claim_hash(),
     suggested_solutions_claims_hash_name: str = suggested_solutions_claims_hash(),
+    running_knapsack_claims_hash_name: str = running_knapsack_claims_hash(),
 ) -> ClaimsService:
-    return ClaimsService(redis, items_claim_hash_name, suggested_solutions_claims_hash_name)
+    return ClaimsService(
+        redis, items_claim_hash_name, suggested_solutions_claims_hash_name, running_knapsack_claims_hash_name
+    )
 
 
 def get_rabbit_channel_context(
@@ -140,9 +147,14 @@ def get_solution_reporter(
     return SolutionReporter(redis, solutions_channel_prefix, suggested_solutions_service)
 
 
+def get_wait_for_report_timeout_seconds() -> float:
+    return float(os.getenv("WAIT_FOR_REPORT_TIMEOUT_SECONDS", "60"))
+
+
 def get_solution_report_waiter_api_route_solve(
     request: RouterSolveRequest,
     redis: Redis = Depends(get_redis_api),
     solutions_channel_prefix: str = Depends(get_solutions_channel_prefix),
+    wait_for_report_timeout_seconds: int = Depends(get_wait_for_report_timeout_seconds),
 ):
-    return SolutionReportWaiter(redis, solutions_channel_prefix, request.knapsack_id)
+    return SolutionReportWaiter(redis, solutions_channel_prefix, request.knapsack_id, wait_for_report_timeout_seconds)

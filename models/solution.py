@@ -8,6 +8,8 @@ from models.knapsack_item import KnapsackItem
 class SolutionReportCause(str, Enum):
     NO_ITEM_CLAIMED = "no_item_claimed"
     SOLUTION_FOUND = "solution_found"
+    SUGGESTION_ALREADY_EXISTS = "suggestion_already_exists"
+    TIMEOUT = "timeout"
 
 
 class SolutionReport(BaseModel):
