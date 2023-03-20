@@ -6,10 +6,13 @@ from models.knapsack_item import KnapsackItem
 
 
 class ClaimsService:
-    def __init__(self, redis: Redis, items_claim_hash: str, suggested_solutions_claim_hash: str):
+    def __init__(
+        self, redis: Redis, items_claim_hash: str, suggested_solutions_claim_hash: str, running_knapsack_claim_hash: str
+    ):
         self._redis = redis
         self._items_claim_hash = items_claim_hash
         self._suggested_solutions_claim_hash = suggested_solutions_claim_hash
+        self._running_knapsack_claim_hash = running_knapsack_claim_hash
 
     async def claim_items(self, items: list[KnapsackItem], volume: int, knapsack_id: str) -> list[KnapsackItem]:
         return [
@@ -27,3 +30,9 @@ class ClaimsService:
 
     async def release_claim_suggested_solutions(self, knapsack_id: str) -> None:
         await self._redis.hdel(self._suggested_solutions_claim_hash, knapsack_id)
+
+    async def claim_running_knapsack(self, knapsack_id: str) -> bool:
+        return bool(await self._redis.hsetnx(self._running_knapsack_claim_hash, knapsack_id, knapsack_id))
+
+    async def release_claim_running_knapsack(self, knapsack_id: str) -> None:
+        await self._redis.hdel(self._running_knapsack_claim_hash, knapsack_id)

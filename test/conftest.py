@@ -42,9 +42,7 @@ async def queues_cleaner() -> list[str]:
 
 @pytest.fixture
 async def random_queue_name(queues_cleaner: list) -> str:
-    queue_name = get_random_string()
-    queues_cleaner.append(queue_name)
-    return queue_name
+    return _append_random_string_to_cleaner(queues_cleaner)
 
 
 @pytest.fixture
@@ -57,8 +55,17 @@ async def hash_cleaner(redis_client):
 
 @pytest.fixture
 async def items_claim_hash_name(hash_cleaner: list) -> str:
+    return _append_random_string_to_cleaner(hash_cleaner)
+
+
+@pytest.fixture
+async def running_knapsack_claim_hash(hash_cleaner: list) -> str:
+    return _append_random_string_to_cleaner(hash_cleaner)
+
+
+def _append_random_string_to_cleaner(cleaner: list[str]):
     hash_name = get_random_string()
-    hash_cleaner.append(hash_name)
+    cleaner.append(hash_name)
     return hash_name
 
 
@@ -119,16 +126,12 @@ def time_service_mock() -> MagicMock:
 
 @pytest.fixture
 def suggested_solutions_hash_name(hash_cleaner) -> str:
-    suggested_solutions_hash_name = get_random_string()
-    hash_cleaner.append(suggested_solutions_hash_name)
-    return suggested_solutions_hash_name
+    return _append_random_string_to_cleaner(hash_cleaner)
 
 
 @pytest.fixture
 def accepted_solutions_list_name(hash_cleaner) -> str:
-    accepted_solutions_list_name = get_random_string()
-    hash_cleaner.append(accepted_solutions_list_name)
-    return accepted_solutions_list_name
+    return _append_random_string_to_cleaner(hash_cleaner)
 
 
 @pytest.fixture
@@ -168,3 +171,8 @@ def solution_suggestions_service_with_mocks(
     return SuggestedSolutionsService(
         redis_mock, claims_service_mock, time_service_mock, suggested_solutions_hash_name, accepted_solutions_list_name
     )
+
+
+@pytest.fixture
+def running_knapsack_claim_hash_name(hash_cleaner) -> str:
+    return _append_random_string_to_cleaner(hash_cleaner)

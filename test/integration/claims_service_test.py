@@ -42,3 +42,17 @@ async def test_release_claims(items_claim_hash_name: str):
 
     assert current_claim == expected_claim
     assert second_claim == expected_claim
+
+
+@pytest.mark.asyncio
+async def test_claim_running_knapsack(running_knapsack_claim_hash_name: str, knapsack_id):
+    claimer: ClaimsService = get_claims_service(running_knapsack_claims_hash_name=running_knapsack_claim_hash_name)
+
+    first_claim = await claimer.claim_running_knapsack(knapsack_id)
+    unsuccessful_claim = await claimer.claim_running_knapsack(knapsack_id)
+    await claimer.release_claim_running_knapsack(knapsack_id)
+    second_claim = await claimer.claim_running_knapsack(knapsack_id)
+
+    assert first_claim is True
+    assert unsuccessful_claim is False
+    assert second_claim is True

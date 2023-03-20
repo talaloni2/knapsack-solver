@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 
 import aio_pika
 import aio_pika.abc
@@ -7,6 +8,7 @@ from logic.algorithm_runner import AlgorithmRunner
 from logic.claims_service import ClaimsService
 from logic.rabbit_channel_context import RabbitChannelContext
 from logic.solution_reporter import SolutionReporter
+from logic.suggested_solution_service import SuggestedSolutionsService
 from models.knapsack_item import KnapsackItem
 from models.knapsack_solver_instance_dto import SolverInstanceRequest
 from models.solution import SolutionReportCause
@@ -17,13 +19,15 @@ class SolverInstanceConsumer:
         self,
         channel_context: RabbitChannelContext,
         algo_runner: AlgorithmRunner,
-        items_claimer: ClaimsService,
+        claims_service: ClaimsService,
         solution_reporter: SolutionReporter,
+        suggested_solutions_service: SuggestedSolutionsService,
     ):
         self._channel_context = channel_context
         self._algo_runner = algo_runner
-        self._items_claimer = items_claimer
+        self._claims_service = claims_service
         self._solution_reporter = solution_reporter
+        self._suggested_solutions_service = suggested_solutions_service
 
     async def __aenter__(self):
         self._channel = await self._channel_context.__aenter__()
@@ -32,8 +36,8 @@ class SolverInstanceConsumer:
     async def start_consuming(self, queue_name: str):
         queue: aio_pika.abc.AbstractQueue = await self._channel.declare_queue(queue_name)
 
-        async for message in self._consume_messages(queue):
-            await self._handle_message(message)
+        async for request in self._consume_messages(queue):
+            await self._handle_message(request)
 
     # noinspection PyUnresolvedReferences
     @staticmethod
@@ -42,19 +46,32 @@ class SolverInstanceConsumer:
             async with queue.iterator() as queue_iter:
                 async for message in queue_iter:
                     async with message.process():
-                        yield message.body.decode()
+                        try:
+                            yield SolverInstanceRequest(**json.loads(message.body.decode()))
+                        except Exception as e:
+                            print(f"Skipping message {message} because could not parse solver request due to {e}")
+                            continue
         except Exception as e:
             print(e)
             raise
 
-    async def _handle_message(self, message: str) -> None:
-        try:
-            request: SolverInstanceRequest = SolverInstanceRequest(**json.loads(message))
-            claimed_items: list[KnapsackItem] = await self._items_claimer.claim_items(
-                request.items, request.volume, request.knapsack_id
+    async def _handle_message(self, request: SolverInstanceRequest) -> None:
+        if not await self._claims_service.claim_running_knapsack(request.knapsack_id):
+            print(
+                f"Knapsack {request.knapsack_id} is already running on a different node. Skipping execution. "
+                f"This may cause timeouts in subscribers"
             )
+            return
+
+        try:
+            if await self._suggested_solutions_service.get_solutions(request.knapsack_id):
+                await self._solution_reporter.report_error(
+                    request.knapsack_id, SolutionReportCause.SUGGESTION_ALREADY_EXISTS
+                )
+                return
+
+            claimed_items: list[KnapsackItem] = await self._try_claim_items(request)
             if not claimed_items:
-                await self._solution_reporter.report_error(request.knapsack_id, SolutionReportCause.NO_ITEM_CLAIMED)
                 return
 
             solution = self._algo_runner.run_algorithm(claimed_items, request.volume, request.algorithm)
@@ -62,12 +79,33 @@ class SolverInstanceConsumer:
             await self._solution_reporter.report_solution_suggestions([solution], request.knapsack_id)
         except Exception as e:
             print(e)
+        finally:
+            if request:
+                await self._claims_service.release_claim_running_knapsack(request.knapsack_id)
+
+    async def _should_run(self, request: SolverInstanceRequest):
+        if await self._suggested_solutions_service.get_solutions(request.knapsack_id):
+            await self._solution_reporter.report_error(
+                request.knapsack_id, SolutionReportCause.SUGGESTION_ALREADY_EXISTS
+            )
+            return False
+
+        return True
+
+    async def _try_claim_items(self, request: SolverInstanceRequest) -> Optional[list[KnapsackItem]]:
+        claimed_items: list[KnapsackItem] = await self._claims_service.claim_items(
+            request.items, request.volume, request.knapsack_id
+        )
+        if not claimed_items:
+            await self._solution_reporter.report_error(request.knapsack_id, SolutionReportCause.NO_ITEM_CLAIMED)
+            return
+        return claimed_items
 
     async def _release_non_needed_items(self, claimed_items: list[KnapsackItem], solution: list[KnapsackItem]) -> None:
         solution_ids = {n.id for n in solution}
         released_items = [i for i in claimed_items if i.id not in solution_ids]
 
-        await self._items_claimer.release_items_claims(released_items)
+        await self._claims_service.release_items_claims(released_items)
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self._channel_context.__aexit__(exc_type, exc_val, exc_tb)

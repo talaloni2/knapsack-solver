@@ -1,18 +1,20 @@
 import json
-from typing import AsyncIterator
 
 from aioredis import Redis
 
-from models.solution import SolutionReport
+from models.solution import SolutionReport, SolutionReportCause
 
 
 class SolutionReportWaiter:
-    def __init__(self, redis: Redis, solutions_channel_prefix: str, knapsack_id: str):
+    def __init__(
+        self, redis: Redis, solutions_channel_prefix: str, knapsack_id: str, wait_for_report_timeout_seconds: float
+    ):
         self._redis = redis
         self._solutions_channel_prefix = solutions_channel_prefix
         self._knapsack_id = knapsack_id
         self._is_consuming = False
         self._pubsub = None
+        self._wait_for_report_timeout_seconds = wait_for_report_timeout_seconds
 
     async def __aenter__(self) -> "SolutionReportWaiter":
         self._pubsub_context = self._redis.pubsub()
@@ -22,22 +24,18 @@ class SolutionReportWaiter:
         return self
 
     async def wait_for_solution_report(self) -> SolutionReport:
-        self._is_consuming = True
-        gen = self._subscribe_for_reports()
-        final_report = None
-        async for report in gen:
-            if report:
-                self._is_consuming = False
-                final_report = report
-        return final_report
+        timeout_or_finished = False
+        message = None
+        while not timeout_or_finished:
+            message = await self._pubsub.get_message(timeout=self._wait_for_report_timeout_seconds)
+            if isinstance(message, dict) and message["type"] == "subscribe":
+                continue
+            timeout_or_finished = True
+        if not message:
+            return SolutionReport(cause=SolutionReportCause.TIMEOUT)
 
-    async def _subscribe_for_reports(self) -> AsyncIterator[SolutionReport]:
-        while self._is_consuming:
-            message = None
-            while not message:
-                message = await self._pubsub.get_message(True)
-            response = SolutionReport(**json.loads(message["data"].decode()))
-            yield response
+        response = SolutionReport(**json.loads(message["data"].decode()))
+        return response
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self._pubsub_context.__aexit__(exc_type, exc_val, exc_tb)
