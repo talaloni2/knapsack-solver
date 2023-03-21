@@ -1,5 +1,4 @@
 import json
-from enum import Enum
 from typing import Optional
 from uuid import uuid4
 

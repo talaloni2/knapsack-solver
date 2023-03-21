@@ -7,21 +7,26 @@ from fastapi import Depends
 from logic.algorithm_decider import AlgorithmDecider
 from logic.algorithm_runner import AlgorithmRunner
 from logic.claims_service import ClaimsService
+from logic.consumer.solver_instance_consumer import SolverInstanceConsumer
 from logic.producer.solver_router_producer import SolverRouterProducer
 from logic.rabbit_channel_context import RabbitChannelContext
+from logic.solution_maintainer import SolutionMaintainer
 from logic.solution_report_waiter import SolutionReportWaiter
 from logic.solution_reporter import SolutionReporter
 from logic.solver.solver_loader import SolverLoader
 from logic.suggested_solution_service import SuggestedSolutionsService
 from logic.time_service import TimeService
-from models.config.configuration import Config
+from models.config.configuration import Config, DeploymentType
 from models.knapsack_router_dto import RouterSolveRequest
 from models.config.rabbit_connection_params import RabbitConnectionParams
 from models.config.redis_connection_params import RedisConnectionParams
 
 
 def get_config() -> Config:
+    raw_deployment_type = os.getenv("DEPLOYMENT_TYPE")
     return Config(
+        server_port=int(os.getenv("SERVER_PORT", "8000")),
+        deployment_type=raw_deployment_type and DeploymentType(raw_deployment_type),
         rabbit_connection_params=RabbitConnectionParams(
             host=os.getenv("RABBITMQ_HOST", "localhost"),
             port=int(os.getenv("RABBITMQ_PORT", "5672")),
@@ -39,9 +44,11 @@ def get_config() -> Config:
         solutions_channel_prefix=os.getenv("SOLUTIONS_CHANNEL_PREFIX", "solutions"),
         wait_for_report_timeout_seconds=float(os.getenv("WAIT_FOR_REPORT_TIMEOUT_SECONDS", "60")),
         suggested_solutions_hash=os.getenv("SOLUTION_SUGGESTIONS_HASH_NAME", "solution_suggestions"),
-        accepted_solutions_list=os.getenv("ACCEPTED_SOLUTION_HASH_NAME", "solution_suggestions"),
+        accepted_solutions_list=os.getenv("ACCEPTED_SOLUTION_HASH_NAME", "accepted_solutions"),
         clean_old_suggestion_interval_seconds=int(os.getenv("CLEAN_OLD_SUGGESTION_INTERVAL_SECONDS", "30")),
-        clean_old_accepted_solutions_interval_seconds=int(os.getenv("CLEAN_OLD_ACCEPTED_SOLUTIONS_INTERVAL_SECONDS", f"{60 * 30}")),
+        clean_old_accepted_solutions_interval_seconds=int(
+            os.getenv("CLEAN_OLD_ACCEPTED_SOLUTIONS_INTERVAL_SECONDS", f"{60 * 30}")
+        ),
         suggestion_ttl_seconds=int(os.getenv("SUGGESTION_TTL_SECONDS", "60")),
         accepted_solution_ttl_seconds=int(os.getenv("ACCEPTED_SOLUTION_TTL_SECONDS", f"{60 * 60 * 4}")),
         accepted_solutions_prefect_count=int(os.getenv("ACCEPTED_SOLUTIONS_PREFECT_COUNT", "5")),
@@ -122,6 +129,32 @@ def get_solution_reporter(
 
 
 def get_solution_report_waiter_api_route_solve(
-    request: RouterSolveRequest, redis: Redis = Depends(get_redis_api), config: Config = Depends(get_config),
+    request: RouterSolveRequest,
+    redis: Redis = Depends(get_redis_api),
+    config: Config = Depends(get_config),
 ) -> SolutionReportWaiter:
-    return SolutionReportWaiter(redis, config.solutions_channel_prefix, request.knapsack_id, config.wait_for_report_timeout_seconds)
+    return SolutionReportWaiter(
+        redis, config.solutions_channel_prefix, request.knapsack_id, config.wait_for_report_timeout_seconds
+    )
+
+
+def get_solver_consumer(
+    rabbit_channel_context=get_rabbit_channel_context(),
+    algo_runner=get_algorithm_runner(),
+    claims_service=get_claims_service(),
+    solution_reporter=get_solution_reporter(),
+    suggested_solution_service=get_suggested_solutions_service(),
+) -> SolverInstanceConsumer:
+    return SolverInstanceConsumer(
+        rabbit_channel_context, algo_runner, claims_service, solution_reporter, suggested_solution_service
+    )
+
+
+def get_solution_maintainer(
+    suggested_solution_service: SuggestedSolutionsService = get_suggested_solutions_service(),
+    redis_client: Redis = get_redis(),
+    time_service: TimeService = get_time_service(),
+    claims_service: ClaimsService = get_claims_service(),
+    config: Config = get_config(),
+) -> SolutionMaintainer:
+    return SolutionMaintainer(suggested_solution_service, redis_client, time_service, claims_service, config)

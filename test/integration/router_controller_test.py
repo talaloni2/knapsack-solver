@@ -26,7 +26,9 @@ def override_config(config: Config):
 
 @pytest.fixture
 def solution_reporter(config: Config, solution_suggestions_service: SuggestedSolutionsService) -> SolutionReporter:
-    return component_factory.get_solution_reporter(suggested_solutions_service=solution_suggestions_service, config=config)
+    return component_factory.get_solution_reporter(
+        suggested_solutions_service=solution_suggestions_service, config=config
+    )
 
 
 @pytest.mark.anyio

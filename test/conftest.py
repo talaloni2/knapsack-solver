@@ -51,6 +51,8 @@ async def hash_cleaner(redis_client):
 async def config(hash_cleaner, queues_cleaner):
     original = get_config()
     return Config(
+        server_port=8000,
+        deployment_type=None,
         rabbit_connection_params=original.rabbit_connection_params,
         redis_connection_params=original.redis_connection_params,
         solver_queue=_append_random_string_to_cleaner(queues_cleaner),
@@ -148,11 +150,12 @@ def redis_mock() -> AsyncMock:
 
 @pytest.fixture
 def solution_suggestions_service_with_mocks(
-    redis_mock: Redis,
-    claims_service_mock: ClaimsService,
-    time_service_mock: TimeService,
-    config: Config
+    redis_mock: Redis, claims_service_mock: ClaimsService, time_service_mock: TimeService, config: Config
 ) -> SuggestedSolutionsService:
     return SuggestedSolutionsService(
-        redis_mock, claims_service_mock, time_service_mock, config.suggested_solutions_hash, config.accepted_solutions_list
+        redis_mock,
+        claims_service_mock,
+        time_service_mock,
+        config.suggested_solutions_hash,
+        config.accepted_solutions_list,
     )

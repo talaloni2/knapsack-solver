@@ -1,10 +1,19 @@
+from enum import Enum
 from typing import NamedTuple
 
 from models.config.rabbit_connection_params import RabbitConnectionParams
 from models.config.redis_connection_params import RedisConnectionParams
 
 
+class DeploymentType(str, Enum):
+    ROUTER = "router"
+    SOLVER = "solver"
+    MAINTAINER = "maintainer"
+
+
 class Config(NamedTuple):
+    server_port: int
+    deployment_type: DeploymentType
 
     rabbit_connection_params: RabbitConnectionParams
     redis_connection_params: RedisConnectionParams

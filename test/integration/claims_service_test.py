@@ -1,4 +1,6 @@
 import pytest
+from aioredis import Redis
+from pytest_mock import MockerFixture
 
 from component_factory import get_claims_service
 from logic.claims_service import ClaimsService
@@ -43,6 +45,16 @@ async def test_release_claims(config: Config):
 
     assert current_claim == expected_claim
     assert second_claim == expected_claim
+
+
+@pytest.mark.asyncio
+async def test_release_no_item_claims_do_not_perform_delete(config: Config, mocker: MockerFixture, redis_client: Redis):
+    hdel_spy = mocker.spy(redis_client, "hdel")
+    claimer: ClaimsService = get_claims_service(config=config)
+
+    await claimer.release_items_claims([])
+
+    hdel_spy.assert_not_called()
 
 
 @pytest.mark.asyncio
