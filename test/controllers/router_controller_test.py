@@ -75,7 +75,12 @@ async def test_route_solve_solution_found(
 
 
 @pytest.mark.asyncio
-async def test_route_solve_no_items_claimed(
+@pytest.mark.parametrize("cause,expected_status", [(SolutionReportCause.NO_ITEM_CLAIMED, http.HTTPStatus.BAD_REQUEST),
+                                                  (SolutionReportCause.SUGGESTION_ALREADY_EXISTS, http.HTTPStatus.BAD_REQUEST),
+                                                  (SolutionReportCause.TIMEOUT, http.HTTPStatus.INTERNAL_SERVER_ERROR)])
+async def test_route_solve_errors(
+    cause: SolutionReportCause,
+    expected_status: http.HTTPStatus,
     time_service_mock: TimeService,
     solution_reports_waiter_mock: SolutionReportWaiter,
     solution_suggestions_service_with_mocks: SuggestedSolutionsService,
@@ -87,7 +92,7 @@ async def test_route_solve_no_items_claimed(
     algo_decider = AsyncMock(AlgorithmDecider)
     algo_decider.decide = AsyncMock(return_value=Algorithms.FIRST_FIT)
     solution_reports_waiter_mock.wait_for_solution_report = AsyncMock(
-        return_value=SolutionReport(cause=SolutionReportCause.NO_ITEM_CLAIMED)
+        return_value=SolutionReport(cause=cause)
     )
     solution_suggestions_service_with_mocks.get_solutions = AsyncMock()
 
@@ -104,7 +109,7 @@ async def test_route_solve_no_items_claimed(
     solve_request_producer.produce_solver_instance_request.assert_called_once()
     solution_reports_waiter_mock.wait_for_solution_report.assert_called_once()
     solution_suggestions_service_with_mocks.get_solutions.assert_not_called()
-    assert http.HTTPStatus.INTERNAL_SERVER_ERROR == response.status_code
+    assert expected_status == response.status_code
 
 
 @pytest.mark.asyncio
