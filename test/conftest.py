@@ -1,19 +1,18 @@
 import asyncio
 from datetime import datetime
 from unittest.mock import MagicMock, AsyncMock
-from uuid import uuid4
 
 import aio_pika
 import aioredis
 import pytest
 from aioredis import Redis
-from fastapi.testclient import TestClient
 from httpx import AsyncClient
 
-from component_factory import get_rabbit_connection_params, get_redis_connection_params, get_claims_service
+from component_factory import get_claims_service, get_config
 from logic.claims_service import ClaimsService
 from logic.suggested_solution_service import SuggestedSolutionsService
 from logic.time_service import TimeService
+from models.config.configuration import Config
 from server import app
 from test.utils import get_random_string
 
@@ -26,7 +25,7 @@ async def test_client() -> AsyncClient:
 
 @pytest.fixture
 async def queues_cleaner() -> list[str]:
-    host, port, user, password = get_rabbit_connection_params()
+    host, port, user, password = get_config().rabbit_connection_params
     connection = await aio_pika.connect_robust(
         f"amqp://{user}:{password}@{host}:{port}/",
     )
@@ -41,11 +40,6 @@ async def queues_cleaner() -> list[str]:
 
 
 @pytest.fixture
-async def random_queue_name(queues_cleaner: list) -> str:
-    return _append_random_string_to_cleaner(queues_cleaner)
-
-
-@pytest.fixture
 async def hash_cleaner(redis_client):
     created_hashes = []
     yield created_hashes
@@ -54,19 +48,33 @@ async def hash_cleaner(redis_client):
 
 
 @pytest.fixture
-async def items_claim_hash_name(hash_cleaner: list) -> str:
-    return _append_random_string_to_cleaner(hash_cleaner)
-
-
-@pytest.fixture
-async def running_knapsack_claim_hash(hash_cleaner: list) -> str:
-    return _append_random_string_to_cleaner(hash_cleaner)
+async def config(hash_cleaner, queues_cleaner):
+    original = get_config()
+    return Config(
+        server_port=8000,
+        deployment_type=None,
+        rabbit_connection_params=original.rabbit_connection_params,
+        redis_connection_params=original.redis_connection_params,
+        solver_queue=_append_random_string_to_cleaner(queues_cleaner),
+        items_claim_hash=_append_random_string_to_cleaner(hash_cleaner),
+        suggested_solutions_claims_hash=_append_random_string_to_cleaner(hash_cleaner),
+        running_knapsack_claims_hash=_append_random_string_to_cleaner(hash_cleaner),
+        solutions_channel_prefix=get_random_string(),
+        wait_for_report_timeout_seconds=original.wait_for_report_timeout_seconds,
+        suggested_solutions_hash=_append_random_string_to_cleaner(hash_cleaner),
+        accepted_solutions_list=_append_random_string_to_cleaner(hash_cleaner),
+        clean_old_suggestion_interval_seconds=original.clean_old_suggestion_interval_seconds,
+        clean_old_accepted_solutions_interval_seconds=original.clean_old_accepted_solutions_interval_seconds,
+        suggestion_ttl_seconds=original.suggestion_ttl_seconds,
+        accepted_solution_ttl_seconds=original.accepted_solution_ttl_seconds,
+        accepted_solutions_prefect_count=original.accepted_solutions_prefect_count,
+    )
 
 
 def _append_random_string_to_cleaner(cleaner: list[str]):
-    hash_name = get_random_string()
-    cleaner.append(hash_name)
-    return hash_name
+    name = get_random_string()
+    cleaner.append(name)
+    return name
 
 
 @pytest.fixture(scope="session")
@@ -85,13 +93,8 @@ def knapsack_id() -> str:
 
 
 @pytest.fixture
-def channel_prefix() -> str:
-    return "solutions_test"
-
-
-@pytest.fixture
-def solution_reports_channel_name(channel_prefix: str, knapsack_id: str):
-    return f"{channel_prefix}:{knapsack_id}"
+def solution_reports_channel_name(config: Config, knapsack_id: str):
+    return f"{config.solutions_channel_prefix}:{knapsack_id}"
 
 
 @pytest.fixture
@@ -104,17 +107,13 @@ async def redis_subscriber(redis_client: Redis, solution_reports_channel_name: s
 
 @pytest.fixture
 def redis_client() -> aioredis.Redis:
-    host, port = get_redis_connection_params()
+    host, port = get_config().redis_connection_params
     return aioredis.from_url(f"redis://{host}:{port}")
 
 
 @pytest.fixture
-def claims_service(hash_cleaner, redis_client) -> ClaimsService:
-    items_claim_hash_name: str = get_random_string()
-    suggested_solutions_claims_hash_name: str = get_random_string()
-    hash_cleaner.append(items_claim_hash_name)
-    hash_cleaner.append(suggested_solutions_claims_hash_name)
-    return get_claims_service(redis_client, items_claim_hash_name, suggested_solutions_claims_hash_name)
+def claims_service(config: Config, redis_client) -> ClaimsService:
+    return get_claims_service(redis_client, config)
 
 
 @pytest.fixture
@@ -125,26 +124,15 @@ def time_service_mock() -> MagicMock:
 
 
 @pytest.fixture
-def suggested_solutions_hash_name(hash_cleaner) -> str:
-    return _append_random_string_to_cleaner(hash_cleaner)
-
-
-@pytest.fixture
-def accepted_solutions_list_name(hash_cleaner) -> str:
-    return _append_random_string_to_cleaner(hash_cleaner)
-
-
-@pytest.fixture
 def solution_suggestions_service(
     hash_cleaner,
     redis_client,
     claims_service,
     time_service_mock,
-    suggested_solutions_hash_name,
-    accepted_solutions_list_name,
+    config: Config,
 ) -> SuggestedSolutionsService:
     return SuggestedSolutionsService(
-        redis_client, claims_service, time_service_mock, suggested_solutions_hash_name, accepted_solutions_list_name
+        redis_client, claims_service, time_service_mock, config.suggested_solutions_hash, config.accepted_solutions_list
     )
 
 
@@ -162,17 +150,12 @@ def redis_mock() -> AsyncMock:
 
 @pytest.fixture
 def solution_suggestions_service_with_mocks(
-    redis_mock: Redis,
-    claims_service_mock: ClaimsService,
-    time_service_mock: TimeService,
-    suggested_solutions_hash_name: str,
-    accepted_solutions_list_name: str,
+    redis_mock: Redis, claims_service_mock: ClaimsService, time_service_mock: TimeService, config: Config
 ) -> SuggestedSolutionsService:
     return SuggestedSolutionsService(
-        redis_mock, claims_service_mock, time_service_mock, suggested_solutions_hash_name, accepted_solutions_list_name
+        redis_mock,
+        claims_service_mock,
+        time_service_mock,
+        config.suggested_solutions_hash,
+        config.accepted_solutions_list,
     )
-
-
-@pytest.fixture
-def running_knapsack_claim_hash_name(hash_cleaner) -> str:
-    return _append_random_string_to_cleaner(hash_cleaner)

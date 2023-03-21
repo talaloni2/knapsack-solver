@@ -46,7 +46,8 @@ async def route_solve(
         # noinspection PyTypeChecker
         return _generate_solve_fail_error_response(report)
 
-    return await suggested_solution_service.get_solutions(request.knapsack_id)
+    res = await suggested_solution_service.get_solutions(request.knapsack_id)
+    return res
 
 
 async def _generate_solve_request(
@@ -60,11 +61,10 @@ async def _generate_solve_request(
 
 
 def _generate_solve_fail_error_response(report: SolutionReport) -> JSONResponse:
+    is_internal_error = report.cause == SolutionReportCause.TIMEOUT
     return JSONResponse(
-        status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-        content=json.dumps(
-            {"message": "Could not resolve request, please retry with different parameters", "cause": report.cause}
-        ),
+        status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR if is_internal_error else http.HTTPStatus.BAD_REQUEST,
+        content={"message": "Could not resolve request, please retry with different parameters", "cause": report.cause},
     )
 
 

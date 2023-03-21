@@ -23,6 +23,8 @@ class ClaimsService:
 
     async def release_items_claims(self, items: list[KnapsackItem]) -> None:
         items_ids = {i.id for i in items}
+        if not items_ids:
+            return
         await self._redis.hdel(self._items_claim_hash, *items_ids)
 
     async def claim_suggested_solutions(self, knapsack_id: str) -> bool:

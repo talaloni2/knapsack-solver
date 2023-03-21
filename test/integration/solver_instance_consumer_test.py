@@ -10,14 +10,15 @@ from logic.producer.solver_router_producer import SolverRouterProducer
 from logic.solution_reporter import SolutionReporter
 from logic.suggested_solution_service import SuggestedSolutionsService
 from models.algorithms import Algorithms
+from models.config.configuration import Config
 from models.knapsack_item import KnapsackItem
 from models.knapsack_solver_instance_dto import SolverInstanceRequest
-from component_factory import get_rabbit_connection_params, get_rabbit_channel_context
+from component_factory import get_rabbit_channel_context
 from test.utils import get_random_string
 
 
 @pytest.mark.asyncio
-async def test_solver_consumer_consume(random_queue_name: str):
+async def test_solver_consumer_consume(config: Config):
     expected_result = [KnapsackItem(id=get_random_string(), value=2, volume=1)]
     non_accepted_items = [KnapsackItem(id=get_random_string(), value=1, volume=1)]
     request = SolverInstanceRequest(
@@ -27,7 +28,7 @@ async def test_solver_consumer_consume(random_queue_name: str):
         algorithm=Algorithms.FIRST_FIT,
     )
 
-    producer = SolverRouterProducer(get_rabbit_connection_params(), random_queue_name)
+    producer = SolverRouterProducer(config.rabbit_connection_params, config.solver_queue)
     async with producer:
         await producer.produce_solver_instance_request(request)
 
@@ -46,7 +47,7 @@ async def test_solver_consumer_consume(random_queue_name: str):
     )
 
     async with consumer:
-        consume_task = asyncio.create_task(consumer.start_consuming(random_queue_name))
+        consume_task = asyncio.create_task(consumer.start_consuming(config.solver_queue))
         await asyncio.sleep(1)
         consume_task.cancel()
 

@@ -2,7 +2,7 @@ import asyncio
 
 import aio_pika
 
-from models.rabbit_connection_params import RabbitConnectionParams
+from models.config.rabbit_connection_params import RabbitConnectionParams
 
 
 class RabbitChannelContext:

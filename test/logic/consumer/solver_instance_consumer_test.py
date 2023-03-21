@@ -9,6 +9,7 @@ from logic.rabbit_channel_context import RabbitChannelContext
 from logic.solution_reporter import SolutionReporter
 from logic.suggested_solution_service import SuggestedSolutionsService
 from models.algorithms import Algorithms
+from models.config.configuration import Config
 from models.knapsack_item import KnapsackItem
 from models.knapsack_solver_instance_dto import SolverInstanceRequest
 from models.solution import SolutionReportCause
@@ -16,7 +17,7 @@ from test.utils import get_random_string
 
 
 @pytest.mark.asyncio
-async def test_solver_consumer_claims(random_queue_name: str):
+async def test_solver_consumer_claims(config: Config):
     expected_result = [KnapsackItem(id=get_random_string(), value=2, volume=1)]
     non_accepted_items = [KnapsackItem(id=get_random_string(), value=1, volume=1)]
     solution_request_items = expected_result + non_accepted_items
@@ -41,7 +42,7 @@ async def test_solver_consumer_claims(random_queue_name: str):
     )
 
     async with consumer:
-        await consumer.start_consuming(random_queue_name)
+        await consumer.start_consuming(config.solver_queue)
 
     algorithm_runner.run_algorithm.assert_called_once()
     items_claimer.claim_items.assert_called_once()
@@ -50,7 +51,7 @@ async def test_solver_consumer_claims(random_queue_name: str):
 
 
 @pytest.mark.asyncio
-async def test_solver_consumer_suggestion_already_exists(random_queue_name: str, knapsack_id: str):
+async def test_solver_consumer_suggestion_already_exists(config: Config, knapsack_id: str):
     request = SolverInstanceRequest(
         items=[KnapsackItem(id=get_random_string(), value=1, volume=1)],
         volume=1,
@@ -72,7 +73,7 @@ async def test_solver_consumer_suggestion_already_exists(random_queue_name: str,
     )
 
     async with consumer:
-        await consumer.start_consuming(random_queue_name)
+        await consumer.start_consuming(config.solver_queue)
 
     solution_reporter.report_error.assert_called_once_with(knapsack_id, SolutionReportCause.SUGGESTION_ALREADY_EXISTS)
     algorithm_runner.run_algorithm.assert_not_called()
@@ -82,7 +83,7 @@ async def test_solver_consumer_suggestion_already_exists(random_queue_name: str,
 
 
 @pytest.mark.asyncio
-async def test_solver_knapsack_already_running(random_queue_name: str, knapsack_id: str):
+async def test_solver_knapsack_already_running(config: Config, knapsack_id: str):
     expected_solution = [KnapsackItem(id=get_random_string(), value=1, volume=1)]
     request = SolverInstanceRequest(
         items=expected_solution,
@@ -107,7 +108,7 @@ async def test_solver_knapsack_already_running(random_queue_name: str, knapsack_
     )
 
     async with consumer:
-        await consumer.start_consuming(random_queue_name)
+        await consumer.start_consuming(config.solver_queue)
 
     solution_reporter.report_solution_suggestions.assert_called_once_with([expected_solution], knapsack_id)
     algorithm_runner.run_algorithm.assert_called_once_with(request.items, request.volume, request.algorithm)

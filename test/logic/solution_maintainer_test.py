@@ -5,9 +5,10 @@ import pytest
 from aioredis import Redis
 
 from logic.claims_service import ClaimsService
-from logic.solution_maintainer import SolutionMaintainer, SUGGESTION_TTL_SECONDS, ACCEPTED_SOLUTION_TTL_SECONDS
+from logic.solution_maintainer import SolutionMaintainer
 from logic.suggested_solution_service import SuggestedSolutionsService
 from logic.time_service import TimeService
+from models.config.configuration import Config
 from models.knapsack_item import KnapsackItem
 from models.solution import SuggestedSolution, AcceptedSolution
 from models.suggested_solutions_actions_statuses import RejectResult
@@ -20,16 +21,14 @@ async def solution_maintainer(
     redis_mock: Redis,
     time_service_mock: TimeService,
     claims_service_mock: ClaimsService,
-    suggested_solutions_hash_name: str,
-    accepted_solutions_list_name: str,
+    config: Config,
 ) -> SolutionMaintainer:
     return SolutionMaintainer(
         solution_suggestions_service_with_mocks,
         redis_mock,
         time_service_mock,
         claims_service_mock,
-        suggested_solutions_hash_name,
-        accepted_solutions_list_name,
+        config,
     )
 
 
@@ -59,9 +58,10 @@ async def test_clean_old_suggestions_sanity(
     redis_mock: Redis,
     knapsack_id: str,
     solution_suggestions_service_with_mocks,
+    config: Config,
 ):
     redis_mock.hscan_iter = MockHscanIter(knapsack_id)
-    expired_time = time_service_mock.now() - timedelta(SUGGESTION_TTL_SECONDS + 1)
+    expired_time = time_service_mock.now() - timedelta(config.suggestion_ttl_seconds + 1)
     expired_solution = SuggestedSolution(time=expired_time, solutions={get_random_string(): []})
     solution_suggestions_service_with_mocks.get_solutions = AsyncMock(return_value=expired_solution)
     solution_suggestions_service_with_mocks.reject_suggested_solutions = AsyncMock()
@@ -99,9 +99,10 @@ async def test_clean_old_suggestions_error_result_still_working(
     redis_mock: Redis,
     knapsack_id: str,
     solution_suggestions_service_with_mocks: SuggestedSolutionsService,
+    config: Config,
 ):
     redis_mock.hscan_iter = MockHscanIter(knapsack_id)
-    expired_time = time_service_mock.now() - timedelta(SUGGESTION_TTL_SECONDS + 1)
+    expired_time = time_service_mock.now() - timedelta(config.suggestion_ttl_seconds + 1)
     expired_solution = SuggestedSolution(time=expired_time, solutions={get_random_string(): []})
     solution_suggestions_service_with_mocks.get_solutions = AsyncMock(return_value=expired_solution)
     solution_suggestions_service_with_mocks.reject_suggested_solutions = AsyncMock(return_value=result)
@@ -118,10 +119,11 @@ async def test_clean_old_suggestions_keep_non_expired_suggestions(
     redis_mock: Redis,
     knapsack_id: str,
     solution_suggestions_service_with_mocks: SuggestedSolutionsService,
+    config: Config,
 ):
     non_expired_knapsack_id = get_random_string()
     redis_mock.hscan_iter = MockHscanIter(knapsack_id, non_expired_knapsack_id)
-    expired_time = time_service_mock.now() - timedelta(SUGGESTION_TTL_SECONDS + 1)
+    expired_time = time_service_mock.now() - timedelta(config.suggestion_ttl_seconds + 1)
     expired_solution = SuggestedSolution(time=expired_time, solutions={get_random_string(): []})
     non_expired_time = time_service_mock.now()
     non_expired_solution = SuggestedSolution(time=non_expired_time, solutions={get_random_string(): []})
@@ -147,9 +149,9 @@ async def test_clean_old_accepted_solutions_delete_all_solutions(
     knapsack_id: str,
     solution_suggestions_service_with_mocks: SuggestedSolutionsService,
     claims_service_mock: ClaimsService,
-    accepted_solutions_list_name: str,
+    config: Config,
 ):
-    expired_time = time_service_mock.now() - timedelta(seconds=ACCEPTED_SOLUTION_TTL_SECONDS + 1)
+    expired_time = time_service_mock.now() - timedelta(seconds=config.accepted_solution_ttl_seconds + 1)
     first_expired_item = KnapsackItem(id=get_random_string(), value=1, volume=1)
     first_expired_sol = AcceptedSolution(time=expired_time, solution=[first_expired_item], knapsack_id=knapsack_id)
     second_expired_item = KnapsackItem(id=get_random_string(), value=1, volume=1)
@@ -164,7 +166,7 @@ async def test_clean_old_accepted_solutions_delete_all_solutions(
 
     assert 3 == redis_mock.lrange.call_count
     assert 2 == redis_mock.lpop.call_count
-    redis_mock.lpop.assert_has_calls([call(accepted_solutions_list_name)] * 2)
+    redis_mock.lpop.assert_has_calls([call(config.accepted_solutions_list)] * 2)
     assert 2 == claims_service_mock.release_items_claims.call_count
     claims_service_mock.release_items_claims.assert_has_calls([call([first_expired_item]), call([second_expired_item])])
 
@@ -177,9 +179,9 @@ async def test_clean_old_accepted_solutions_encountered_live_solution_should_not
     knapsack_id: str,
     solution_suggestions_service_with_mocks: SuggestedSolutionsService,
     claims_service_mock: ClaimsService,
-    accepted_solutions_list_name: str,
+    config: Config,
 ):
-    expired_time = time_service_mock.now() - timedelta(seconds=ACCEPTED_SOLUTION_TTL_SECONDS + 1)
+    expired_time = time_service_mock.now() - timedelta(seconds=config.accepted_solution_ttl_seconds + 1)
     expired_item = KnapsackItem(id=get_random_string(), value=1, volume=1)
     expired_sol = AcceptedSolution(time=expired_time, solution=[expired_item], knapsack_id=knapsack_id)
     non_expired_time = time_service_mock.now()
@@ -192,5 +194,5 @@ async def test_clean_old_accepted_solutions_encountered_live_solution_should_not
     await solution_maintainer.clean_old_accepted_solutions()
 
     assert 2 == redis_mock.lrange.call_count
-    redis_mock.lpop.assert_called_once_with(accepted_solutions_list_name)
+    redis_mock.lpop.assert_called_once_with(config.accepted_solutions_list)
     claims_service_mock.release_items_claims.assert_called_once_with([expired_item])

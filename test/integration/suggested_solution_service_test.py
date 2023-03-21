@@ -8,6 +8,7 @@ from aioredis import Redis
 from logic.claims_service import ClaimsService
 from logic.suggested_solution_service import SuggestedSolutionsService
 from logic.time_service import TimeService
+from models.config.configuration import Config
 from models.knapsack_item import KnapsackItem
 from models.solution import SuggestedSolution, AcceptedSolution
 from models.suggested_solutions_actions_statuses import RejectResult, AcceptResult
@@ -21,7 +22,6 @@ async def test_register_suggested_solutions(
     claims_service_mock: ClaimsService,
     time_service_mock: TimeService,
     knapsack_id: str,
-    suggested_solutions_hash_name: str,
 ):
     expected_time = datetime.now()
     time_service_mock.now = MagicMock(return_value=expected_time)
@@ -46,9 +46,8 @@ async def test_accept_suggested_solution(
     redis_mock: Redis,
     time_service_mock: TimeService,
     knapsack_id: str,
-    suggested_solutions_hash_name: str,
-    accepted_solutions_list_name: str,
     claims_service_mock: ClaimsService,
+    config: Config,
 ):
     expected_time = datetime.now()
     time_service_mock.now = MagicMock(return_value=expected_time)
@@ -82,10 +81,10 @@ async def test_accept_suggested_solution(
     claims_service_mock.release_items_claims.assert_called_once_with([first_released_item, second_released_item])
     claims_service_mock.release_claim_suggested_solutions.assert_called_once_with(knapsack_id)
     redis_mock.rpush.assert_called_once_with(
-        accepted_solutions_list_name,
+        config.accepted_solutions_list,
         AcceptedSolution(time=expected_time, solution=expected_solution, knapsack_id=knapsack_id).json(),
     )
-    redis_mock.hdel.assert_called_once_with(suggested_solutions_hash_name, knapsack_id)
+    redis_mock.hdel.assert_called_once_with(config.suggested_solutions_hash, knapsack_id)
 
 
 @pytest.mark.asyncio
@@ -93,8 +92,6 @@ async def test_accept_suggested_solution_solution_claim_failed(
     solution_suggestions_service_with_mocks: SuggestedSolutionsService,
     redis_mock: Redis,
     knapsack_id: str,
-    suggested_solutions_hash_name: str,
-    accepted_solutions_list_name: str,
     claims_service_mock: ClaimsService,
 ):
     chosen_solution_id: str = get_random_string()
@@ -115,8 +112,6 @@ async def test_accept_suggested_solution_solution_deleted(
     solution_suggestions_service_with_mocks: SuggestedSolutionsService,
     redis_mock: Redis,
     knapsack_id: str,
-    suggested_solutions_hash_name: str,
-    accepted_solutions_list_name: str,
     claims_service_mock: ClaimsService,
 ):
     chosen_solution_id: str = get_random_string()
@@ -186,7 +181,7 @@ async def test_get_solutions(
     solution_suggestions_service_with_mocks: SuggestedSolutionsService,
     knapsack_id: str,
     redis_mock: Redis,
-    suggested_solutions_hash_name: str,
+    config: Config,
 ):
     expected_solution = SuggestedSolution(
         time=datetime.now(), solutions={get_random_string(): [KnapsackItem(id=get_random_string(), volume=1, value=1)]}
@@ -195,7 +190,7 @@ async def test_get_solutions(
 
     suggested_solution = await solution_suggestions_service_with_mocks.get_solutions(knapsack_id)
 
-    redis_mock.hget.assert_called_once_with(suggested_solutions_hash_name, knapsack_id)
+    redis_mock.hget.assert_called_once_with(config.suggested_solutions_hash, knapsack_id)
     assert expected_solution == suggested_solution
 
 
@@ -204,13 +199,13 @@ async def test_get_solutions_solutions_not_exist(
     solution_suggestions_service_with_mocks: SuggestedSolutionsService,
     knapsack_id: str,
     redis_mock: Redis,
-    suggested_solutions_hash_name: str,
+    config: Config,
 ):
     redis_mock.hget = AsyncMock(return_value=None)
 
     suggested_solution = await solution_suggestions_service_with_mocks.get_solutions(knapsack_id)
 
-    redis_mock.hget.assert_called_once_with(suggested_solutions_hash_name, knapsack_id)
+    redis_mock.hget.assert_called_once_with(config.suggested_solutions_hash, knapsack_id)
     assert suggested_solution is None
 
 
@@ -219,9 +214,8 @@ async def test_reject_suggested_solutions(
     solution_suggestions_service_with_mocks: SuggestedSolutionsService,
     redis_mock: Redis,
     knapsack_id: str,
-    suggested_solutions_hash_name: str,
-    accepted_solutions_list_name: str,
     claims_service_mock: ClaimsService,
+    config: Config,
 ):
     first_released_item = KnapsackItem(id=get_random_string(), value=1, volume=1)
     second_released_item = KnapsackItem(id=get_random_string(), value=1, volume=1)
@@ -243,7 +237,7 @@ async def test_reject_suggested_solutions(
     claims_service_mock.claim_suggested_solutions.assert_called_once_with(knapsack_id)
     solution_suggestions_service_with_mocks.get_solutions.assert_called_once_with(knapsack_id)
     claims_service_mock.release_items_claims.assert_called_once_with([first_released_item, second_released_item])
-    redis_mock.hdel.assert_called_once_with(suggested_solutions_hash_name, knapsack_id)
+    redis_mock.hdel.assert_called_once_with(config.suggested_solutions_hash, knapsack_id)
     claims_service_mock.release_claim_suggested_solutions.assert_called_once_with(knapsack_id)
 
 
@@ -252,8 +246,6 @@ async def test_reject_suggested_solution_solution_claim_failed(
     solution_suggestions_service_with_mocks: SuggestedSolutionsService,
     redis_mock: Redis,
     knapsack_id: str,
-    suggested_solutions_hash_name: str,
-    accepted_solutions_list_name: str,
     claims_service_mock: ClaimsService,
 ):
     claims_service_mock.claim_suggested_solutions = AsyncMock(return_value=False)
@@ -273,8 +265,6 @@ async def test_reject_suggested_solution_solution_deleted(
     solution_suggestions_service_with_mocks: SuggestedSolutionsService,
     redis_mock: Redis,
     knapsack_id: str,
-    suggested_solutions_hash_name: str,
-    accepted_solutions_list_name: str,
     claims_service_mock: ClaimsService,
 ):
     solution_suggestions_service_with_mocks.get_solutions = AsyncMock(return_value=None)
