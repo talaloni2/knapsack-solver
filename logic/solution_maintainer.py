@@ -10,9 +10,7 @@ from component_factory import (
     get_suggested_solutions_service,
     get_redis,
     get_time_service,
-    get_claims_service,
-    get_suggested_solutions_hash_name,
-    get_accepted_solutions_list_name,
+    get_claims_service, get_config,
 )
 from logic.claims_service import ClaimsService
 from logic.suggested_solution_service import SuggestedSolutionsService
@@ -115,6 +113,7 @@ async def run_tasks(
 
 
 if __name__ == "__main__":
+    config = get_config()
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(
@@ -123,8 +122,8 @@ if __name__ == "__main__":
             get_redis(),
             get_time_service(),
             get_claims_service(),
-            get_suggested_solutions_hash_name(),
-            get_accepted_solutions_list_name(),
+            config.suggested_solutions_claims_hash,
+            config.accepted_solutions_list
         )
     )
     loop.run_forever()

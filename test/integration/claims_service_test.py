@@ -2,13 +2,14 @@ import pytest
 
 from component_factory import get_claims_service
 from logic.claims_service import ClaimsService
+from models.config.configuration import Config
 from models.knapsack_item import KnapsackItem
 from test.utils import get_random_string
 
 
 @pytest.mark.asyncio
-async def test_claim_items(items_claim_hash_name: str):
-    claimer: ClaimsService = get_claims_service(items_claim_hash_name=items_claim_hash_name)
+async def test_claim_items(config: Config):
+    claimer: ClaimsService = get_claims_service(config=config)
     previously_claimed_items = [KnapsackItem(id=get_random_string(), value=1, volume=1)]
     expected_claim = [
         KnapsackItem(id=get_random_string(), value=2, volume=1),
@@ -28,8 +29,8 @@ async def _claim_suggested_solution(redis_client, suggested_solution_claimed_ite
 
 
 @pytest.mark.asyncio
-async def test_release_claims(items_claim_hash_name: str):
-    claimer: ClaimsService = get_claims_service(items_claim_hash_name=items_claim_hash_name)
+async def test_release_claims(config: Config):
+    claimer: ClaimsService = get_claims_service(config=config)
     expected_claim = [
         KnapsackItem(id=get_random_string(), value=3, volume=1),
         KnapsackItem(id=get_random_string(), value=2, volume=1),
@@ -45,8 +46,8 @@ async def test_release_claims(items_claim_hash_name: str):
 
 
 @pytest.mark.asyncio
-async def test_claim_running_knapsack(running_knapsack_claim_hash_name: str, knapsack_id):
-    claimer: ClaimsService = get_claims_service(running_knapsack_claims_hash_name=running_knapsack_claim_hash_name)
+async def test_claim_running_knapsack(config: Config, knapsack_id):
+    claimer: ClaimsService = get_claims_service(config=config)
 
     first_claim = await claimer.claim_running_knapsack(knapsack_id)
     unsuccessful_claim = await claimer.claim_running_knapsack(knapsack_id)

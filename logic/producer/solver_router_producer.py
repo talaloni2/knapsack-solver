@@ -3,7 +3,7 @@ import asyncio
 import aio_pika
 
 from models.knapsack_solver_instance_dto import SolverInstanceRequest
-from models.rabbit_connection_params import RabbitConnectionParams
+from models.config.rabbit_connection_params import RabbitConnectionParams
 
 
 class SolverRouterProducer:

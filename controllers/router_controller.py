@@ -46,7 +46,9 @@ async def route_solve(
         # noinspection PyTypeChecker
         return _generate_solve_fail_error_response(report)
 
-    return await suggested_solution_service.get_solutions(request.knapsack_id)
+    res = await suggested_solution_service.get_solutions(request.knapsack_id)
+    print(f"GOT HERE!!!====================================== {res}", )
+    return res
 
 
 async def _generate_solve_request(
