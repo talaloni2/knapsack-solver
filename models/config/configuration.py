@@ -34,3 +34,7 @@ class Config(NamedTuple):
     suggestion_ttl_seconds: int
     accepted_solution_ttl_seconds: int
     accepted_solutions_prefect_count: int
+
+    solvers_moderate_busy_threshold: int
+    solvers_busy_threshold: int
+    solvers_very_busy_threshold: int

@@ -1,5 +1,6 @@
 import os
 
+import aio_pika.abc
 import aioredis
 from aioredis import Redis
 from fastapi import Depends
@@ -7,6 +8,7 @@ from fastapi import Depends
 from logic.algorithm_decider import AlgorithmDecider
 from logic.algorithm_runner import AlgorithmRunner
 from logic.claims_service import ClaimsService
+from logic.cluster_availability_service import ClusterAvailabilityService
 from logic.consumer.solver_instance_consumer import SolverInstanceConsumer
 from logic.producer.solver_router_producer import SolverRouterProducer
 from logic.rabbit_channel_context import RabbitChannelContext
@@ -14,6 +16,7 @@ from logic.solution_maintainer import SolutionMaintainer
 from logic.solution_report_waiter import SolutionReportWaiter
 from logic.solution_reporter import SolutionReporter
 from logic.solver.solver_loader import SolverLoader
+from logic.subscriptions_service import SubscriptionsService
 from logic.suggested_solution_service import SuggestedSolutionsService
 from logic.time_service import TimeService
 from models.config.configuration import Config, DeploymentType
@@ -52,11 +55,10 @@ def get_config() -> Config:
         suggestion_ttl_seconds=int(os.getenv("SUGGESTION_TTL_SECONDS", "60")),
         accepted_solution_ttl_seconds=int(os.getenv("ACCEPTED_SOLUTION_TTL_SECONDS", f"{60 * 60 * 4}")),
         accepted_solutions_prefect_count=int(os.getenv("ACCEPTED_SOLUTIONS_PREFECT_COUNT", "5")),
+        solvers_moderate_busy_threshold=int(os.getenv("SOLVERS_MODERATE_BUSY_THRESHOLD", "40")),
+        solvers_busy_threshold=int(os.getenv("SOLVERS_BUSY_THRESHOLD", "60")),
+        solvers_very_busy_threshold=int(os.getenv("SOLVERS_VERY_BUSY_THRESHOLD", "100")),
     )
-
-
-def get_algorithm_decider() -> AlgorithmDecider:
-    return AlgorithmDecider()
 
 
 def get_solver_loader():
@@ -67,8 +69,20 @@ def get_algorithm_runner(solver_loader=get_solver_loader()) -> AlgorithmRunner:
     return AlgorithmRunner(solver_loader)
 
 
-def get_solver_router_producer(config: Config = Depends(get_config)) -> SolverRouterProducer:
-    return SolverRouterProducer(config.rabbit_connection_params, config.solver_queue)
+def get_rabbit_channel_context(config: Config = get_config()) -> RabbitChannelContext:
+    return RabbitChannelContext(config.rabbit_connection_params)
+
+
+async def get_rabbit_channel_api(config: Config = Depends(get_config)) -> aio_pika.abc.AbstractChannel:
+    ctx = RabbitChannelContext(config.rabbit_connection_params)
+    async with ctx as channel:
+        yield channel
+
+
+def get_solver_router_producer_api(
+    rabbit_channel: aio_pika.abc.AbstractChannel = Depends(get_rabbit_channel_api), config: Config = Depends(get_config)
+) -> SolverRouterProducer:
+    return SolverRouterProducer(rabbit_channel, config.solver_queue)
 
 
 def get_redis_api(config: Config = Depends(get_config)) -> Redis:
@@ -90,8 +104,21 @@ def get_claims_service(redis: Redis = get_redis(), config: Config = get_config()
     )
 
 
-def get_rabbit_channel_context(config: Config = get_config()) -> RabbitChannelContext:
-    return RabbitChannelContext(config.rabbit_connection_params)
+def get_subscriptions_service() -> SubscriptionsService:
+    return SubscriptionsService()
+
+
+def get_cluster_availability_service_api(
+    rabbit_channel: aio_pika.abc.AbstractChannel = Depends(get_rabbit_channel_api), config: Config = Depends(get_config)
+) -> ClusterAvailabilityService:
+    return ClusterAvailabilityService(rabbit_channel, config)
+
+
+def get_algorithm_decider_api(
+    subscriptions_service: SubscriptionsService = Depends(get_subscriptions_service),
+    cluster_availability_service: ClusterAvailabilityService = Depends(get_cluster_availability_service_api),
+) -> AlgorithmDecider:
+    return AlgorithmDecider(subscriptions_service, cluster_availability_service)
 
 
 def get_time_service() -> TimeService:

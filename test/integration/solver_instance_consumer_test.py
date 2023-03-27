@@ -1,6 +1,7 @@
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
+import aio_pika.abc
 import pytest
 
 from logic.algorithm_runner import AlgorithmRunner
@@ -18,7 +19,7 @@ from test.utils import get_random_string
 
 
 @pytest.mark.asyncio
-async def test_solver_consumer_consume(config: Config):
+async def test_solver_consumer_consume(rabbit_channel: aio_pika.abc.AbstractChannel, config: Config):
     expected_result = [KnapsackItem(id=get_random_string(), value=2, volume=1)]
     non_accepted_items = [KnapsackItem(id=get_random_string(), value=1, volume=1)]
     request = SolverInstanceRequest(
@@ -28,7 +29,7 @@ async def test_solver_consumer_consume(config: Config):
         algorithm=Algorithms.FIRST_FIT,
     )
 
-    producer = SolverRouterProducer(config.rabbit_connection_params, config.solver_queue)
+    producer = SolverRouterProducer(rabbit_channel, config.solver_queue)
     async with producer:
         await producer.produce_solver_instance_request(request)
 

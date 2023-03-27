@@ -48,7 +48,18 @@ async def hash_cleaner(redis_client):
 
 
 @pytest.fixture
-async def config(hash_cleaner, queues_cleaner):
+async def rabbit_channel() -> aio_pika.abc.AbstractChannel:
+    host, port, user, password = get_config().rabbit_connection_params
+    connection = await aio_pika.connect_robust(
+        f"amqp://{user}:{password}@{host}:{port}/",
+    )
+
+    async with connection:
+        yield await connection.channel()
+
+
+@pytest.fixture
+async def config(hash_cleaner, queues_cleaner) -> Config:
     original = get_config()
     return Config(
         server_port=8000,
@@ -68,7 +79,15 @@ async def config(hash_cleaner, queues_cleaner):
         suggestion_ttl_seconds=original.suggestion_ttl_seconds,
         accepted_solution_ttl_seconds=original.accepted_solution_ttl_seconds,
         accepted_solutions_prefect_count=original.accepted_solutions_prefect_count,
+        solvers_moderate_busy_threshold=original.solvers_moderate_busy_threshold,
+        solvers_busy_threshold=original.solvers_busy_threshold,
+        solvers_very_busy_threshold=original.solvers_very_busy_threshold,
     )
+
+
+@pytest.fixture
+async def solver_queue(config: Config, rabbit_channel: aio_pika.abc.AbstractChannel) -> aio_pika.abc.AbstractQueue:
+    return await rabbit_channel.declare_queue(config.solver_queue)
 
 
 def _append_random_string_to_cleaner(cleaner: list[str]):

@@ -1,12 +1,11 @@
 import http
-import json
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from component_factory import (
-    get_solver_router_producer,
-    get_algorithm_decider,
+    get_solver_router_producer_api,
+    get_algorithm_decider_api,
     get_suggested_solutions_service_api,
     get_solution_report_waiter_api_route_solve,
 )
@@ -31,8 +30,8 @@ router = APIRouter()
 @router.post("/solve")
 async def route_solve(
     request: RouterSolveRequest,
-    algorithm_decider: AlgorithmDecider = Depends(get_algorithm_decider),
-    solve_request_producer: SolverRouterProducer = Depends(get_solver_router_producer),
+    algorithm_decider: AlgorithmDecider = Depends(get_algorithm_decider_api),
+    solve_request_producer: SolverRouterProducer = Depends(get_solver_router_producer_api),
     solution_reports_waiter: SolutionReportWaiter = Depends(get_solution_report_waiter_api_route_solve),
     suggested_solution_service: SuggestedSolutionsService = Depends(get_suggested_solutions_service_api),
 ) -> SuggestedSolution:
@@ -53,7 +52,7 @@ async def route_solve(
 async def _generate_solve_request(
     algorithm_decider: AlgorithmDecider, request: RouterSolveRequest
 ) -> SolverInstanceRequest:
-    requested_algorithm = await algorithm_decider.decide()
+    requested_algorithm = await algorithm_decider.decide(request.knapsack_id)
     solver_instance_request = SolverInstanceRequest(
         items=request.items, volume=request.volume, knapsack_id=request.knapsack_id, algorithm=requested_algorithm
     )
