@@ -79,7 +79,9 @@ async def get_rabbit_channel_api(config: Config = Depends(get_config)) -> aio_pi
         yield channel
 
 
-def get_solver_router_producer_api(rabbit_channel: aio_pika.abc.AbstractChannel = Depends(get_rabbit_channel_api), config: Config = Depends(get_config)) -> SolverRouterProducer:
+def get_solver_router_producer_api(
+    rabbit_channel: aio_pika.abc.AbstractChannel = Depends(get_rabbit_channel_api), config: Config = Depends(get_config)
+) -> SolverRouterProducer:
     return SolverRouterProducer(rabbit_channel, config.solver_queue)
 
 
@@ -106,7 +108,9 @@ def get_subscriptions_service() -> SubscriptionsService:
     return SubscriptionsService()
 
 
-def get_cluster_availability_service_api(rabbit_channel: aio_pika.abc.AbstractChannel = Depends(get_rabbit_channel_api), config: Config = Depends(get_config)) -> ClusterAvailabilityService:
+def get_cluster_availability_service_api(
+    rabbit_channel: aio_pika.abc.AbstractChannel = Depends(get_rabbit_channel_api), config: Config = Depends(get_config)
+) -> ClusterAvailabilityService:
     return ClusterAvailabilityService(rabbit_channel, config)
 
 

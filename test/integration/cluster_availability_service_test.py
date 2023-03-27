@@ -48,13 +48,20 @@ def config_thresholds(config: Config, threshold_config: ThresholdParameters):
         [ThresholdParameters(1, 1, 2), ClusterAvailabilityScore.BUSY],
         [ThresholdParameters(1, 2, 3), ClusterAvailabilityScore.MODERATE],
         [ThresholdParameters(2, 3, 4), ClusterAvailabilityScore.AVAILABLE],
-    ]
+    ],
 )
-async def test_cluster_availability_service_return_available(threshold_config, expected_score: ClusterAvailabilityScore, config: Config, rabbit_channel: aio_pika.abc.AbstractChannel):
+async def test_cluster_availability_service_return_available(
+    threshold_config,
+    expected_score: ClusterAvailabilityScore,
+    config: Config,
+    rabbit_channel: aio_pika.abc.AbstractChannel,
+):
     conf = config_thresholds(config, threshold_config)
     service = ClusterAvailabilityService(rabbit_channel, conf)
     await rabbit_channel.declare_queue(conf.solver_queue)
-    await rabbit_channel.default_exchange.publish(routing_key=conf.solver_queue, message=aio_pika.Message(body=b"lololololololo"))
+    await rabbit_channel.default_exchange.publish(
+        routing_key=conf.solver_queue, message=aio_pika.Message(body=b"lololololololo")
+    )
 
     score = await service.get_cluster_availability_score()
     assert score == expected_score
