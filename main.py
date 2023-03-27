@@ -29,5 +29,6 @@ async def start_solver_consumer(consumer: SolverInstanceConsumer, queue_name: st
     async with consumer:
         await consumer.start_consuming(queue_name)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main(get_config())

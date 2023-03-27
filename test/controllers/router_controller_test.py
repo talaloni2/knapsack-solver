@@ -75,9 +75,14 @@ async def test_route_solve_solution_found(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("cause,expected_status", [(SolutionReportCause.NO_ITEM_CLAIMED, http.HTTPStatus.BAD_REQUEST),
-                                                  (SolutionReportCause.SUGGESTION_ALREADY_EXISTS, http.HTTPStatus.BAD_REQUEST),
-                                                  (SolutionReportCause.TIMEOUT, http.HTTPStatus.INTERNAL_SERVER_ERROR)])
+@pytest.mark.parametrize(
+    "cause,expected_status",
+    [
+        (SolutionReportCause.NO_ITEM_CLAIMED, http.HTTPStatus.BAD_REQUEST),
+        (SolutionReportCause.SUGGESTION_ALREADY_EXISTS, http.HTTPStatus.BAD_REQUEST),
+        (SolutionReportCause.TIMEOUT, http.HTTPStatus.INTERNAL_SERVER_ERROR),
+    ],
+)
 async def test_route_solve_errors(
     cause: SolutionReportCause,
     expected_status: http.HTTPStatus,
@@ -91,9 +96,7 @@ async def test_route_solve_errors(
     solve_request_producer = AsyncMock(SolverRouterProducer)
     algo_decider = AsyncMock(AlgorithmDecider)
     algo_decider.decide = AsyncMock(return_value=Algorithms.FIRST_FIT)
-    solution_reports_waiter_mock.wait_for_solution_report = AsyncMock(
-        return_value=SolutionReport(cause=cause)
-    )
+    solution_reports_waiter_mock.wait_for_solution_report = AsyncMock(return_value=SolutionReport(cause=cause))
     solution_suggestions_service_with_mocks.get_solutions = AsyncMock()
 
     # noinspection PyTypeChecker

@@ -27,8 +27,12 @@ class SolutionMaintainer:
         self._time_service = time_service
         self._claims_service = claims_service
         self._config = config
-        self.clean_old_suggestions = tasks.loop(seconds=config.clean_old_suggestion_interval_seconds)(self.clean_old_suggestions)
-        self.clean_old_accepted_solutions = tasks.loop(seconds=config.clean_old_accepted_solutions_interval_seconds)(self.clean_old_accepted_solutions)
+        self.clean_old_suggestions = tasks.loop(seconds=config.clean_old_suggestion_interval_seconds)(
+            self.clean_old_suggestions
+        )
+        self.clean_old_accepted_solutions = tasks.loop(seconds=config.clean_old_accepted_solutions_interval_seconds)(
+            self.clean_old_accepted_solutions
+        )
 
     async def clean_old_suggestions(self):
         suggested_solution_ttl = timedelta(seconds=self._config.suggestion_ttl_seconds)
@@ -71,7 +75,9 @@ class SolutionMaintainer:
 
     async def _get_accepted_solutions(self, current_index):
         return await self._redis_client.lrange(
-            self._config.accepted_solutions_list, current_index, current_index + self._config.accepted_solutions_prefect_count
+            self._config.accepted_solutions_list,
+            current_index,
+            current_index + self._config.accepted_solutions_prefect_count,
         )
 
 

@@ -3,7 +3,6 @@ from http import HTTPStatus
 
 import pytest
 from aioredis import Redis
-from fastapi.testclient import TestClient
 from httpx import AsyncClient
 
 import component_factory
@@ -12,7 +11,7 @@ from logic.suggested_solution_service import SuggestedSolutionsService
 from models.config.configuration import Config
 from models.knapsack_item import KnapsackItem
 from models.knapsack_router_dto import RouterSolveRequest
-from models.solution import SolutionReport, SolutionReportCause, SuggestedSolution
+from models.solution import SuggestedSolution
 from server import app
 from test.utils import get_random_string
 
@@ -38,6 +37,7 @@ async def test_router_controller_endpoint_sanity(
     redis_client: Redis,
     knapsack_id: str,
     solution_reporter: SolutionReporter,
+    solver_queue,
 ):
     expected_item = KnapsackItem(id=get_random_string(), value=10, volume=10)
     request = RouterSolveRequest(items=[expected_item], volume=10, knapsack_id=knapsack_id)
