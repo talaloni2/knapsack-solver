@@ -12,8 +12,8 @@ from test.utils import get_random_string
 
 
 @pytest.mark.asyncio
-async def test_solver_router_producer(config: Config):
-    producer = SolverRouterProducer(config.rabbit_connection_params, config.solver_queue)
+async def test_solver_router_producer(rabbit_channel: aio_pika.abc.AbstractChannel, config: Config):
+    producer = SolverRouterProducer(rabbit_channel, config.solver_queue)
     expected_items = [KnapsackItem(id=get_random_string(), value=1, volume=1)]
     request = SolverInstanceRequest(
         items=expected_items,

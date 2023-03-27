@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from component_factory import (
-    get_solver_router_producer,
+    get_solver_router_producer_api,
     get_algorithm_decider_api,
     get_suggested_solutions_service_api,
     get_solution_report_waiter_api_route_solve,
@@ -31,7 +31,7 @@ router = APIRouter()
 async def route_solve(
     request: RouterSolveRequest,
     algorithm_decider: AlgorithmDecider = Depends(get_algorithm_decider_api),
-    solve_request_producer: SolverRouterProducer = Depends(get_solver_router_producer),
+    solve_request_producer: SolverRouterProducer = Depends(get_solver_router_producer_api),
     solution_reports_waiter: SolutionReportWaiter = Depends(get_solution_report_waiter_api_route_solve),
     suggested_solution_service: SuggestedSolutionsService = Depends(get_suggested_solutions_service_api),
 ) -> SuggestedSolution:

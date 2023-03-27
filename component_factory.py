@@ -69,8 +69,18 @@ def get_algorithm_runner(solver_loader=get_solver_loader()) -> AlgorithmRunner:
     return AlgorithmRunner(solver_loader)
 
 
-def get_solver_router_producer(config: Config = Depends(get_config)) -> SolverRouterProducer:
-    return SolverRouterProducer(config.rabbit_connection_params, config.solver_queue)
+def get_rabbit_channel_context(config: Config = get_config()) -> RabbitChannelContext:
+    return RabbitChannelContext(config.rabbit_connection_params)
+
+
+async def get_rabbit_channel_api(config: Config = Depends(get_config)) -> aio_pika.abc.AbstractChannel:
+    ctx = RabbitChannelContext(config.rabbit_connection_params)
+    async with ctx as channel:
+        yield channel
+
+
+def get_solver_router_producer_api(rabbit_channel: aio_pika.abc.AbstractChannel = Depends(get_rabbit_channel_api), config: Config = Depends(get_config)) -> SolverRouterProducer:
+    return SolverRouterProducer(rabbit_channel, config.solver_queue)
 
 
 def get_redis_api(config: Config = Depends(get_config)) -> Redis:
@@ -90,16 +100,6 @@ def get_claims_service(redis: Redis = get_redis(), config: Config = get_config()
     return ClaimsService(
         redis, config.items_claim_hash, config.suggested_solutions_claims_hash, config.running_knapsack_claims_hash
     )
-
-
-def get_rabbit_channel_context(config: Config = get_config()) -> RabbitChannelContext:
-    return RabbitChannelContext(config.rabbit_connection_params)
-
-
-async def get_rabbit_channel_api(config: Config = Depends(get_config)) -> aio_pika.abc.AbstractChannel:
-    ctx = RabbitChannelContext(config.rabbit_connection_params)
-    async with ctx as channel:
-        yield channel
 
 
 def get_subscriptions_service() -> SubscriptionsService:
