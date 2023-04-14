@@ -1,4 +1,5 @@
 #Knapsack Solver
+Python Version: 3.10.6
 This repo includes both the solver instance and solver router logic.<br>
 
 ##Running tests
