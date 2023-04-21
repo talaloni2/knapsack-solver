@@ -35,3 +35,19 @@ def test_greedy_solver_non_optimal():
 
     assert len(result) == len(expected_result)
     assert {i.id for i in expected_result} == {i.id for i in result}
+
+
+def test_greedy_solver_highest_value_picked():
+    solver = GreedySolver()
+    expected_result = [KnapsackItem(id=get_random_string(), value=8, volume=8)]
+    items = [
+        KnapsackItem(id=get_random_string(), value=2, volume=1),
+        KnapsackItem(id=get_random_string(), value=2, volume=1),
+        KnapsackItem(id=get_random_string(), value=2, volume=1),
+    ] + expected_result
+    available_volume = 8
+
+    result = solver.solve(items, available_volume)
+
+    assert len(result) == len(expected_result)
+    assert {i.id for i in expected_result} == {i.id for i in result}
