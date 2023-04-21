@@ -38,3 +38,11 @@ class Config(NamedTuple):
     solvers_moderate_busy_threshold: int
     solvers_busy_threshold: int
     solvers_very_busy_threshold: int
+
+    genetic_light_generations: int
+    genetic_light_mutation_probability: float
+    genetic_light_population: int
+
+    genetic_heavy_generations: int
+    genetic_heavy_mutation_probability: float
+    genetic_heavy_population: int

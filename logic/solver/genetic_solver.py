@@ -4,7 +4,7 @@ from logic.solver.base_solver import BaseSolver
 from models.knapsack_item import KnapsackItem
 
 
-class GeneticKnapsackSolver(BaseSolver):
+class GeneticSolver(BaseSolver):
     def __init__(self, generations: int, mutation_probability: float, initial_population_size: int):
         self._generations = generations
         self._mutation_probability = mutation_probability
@@ -40,10 +40,11 @@ class GeneticKnapsackSolver(BaseSolver):
             for _ in range(items_count):
                 chromosome.append(random.choice(genes))
             population.append(chromosome)
-        print("Generated a random population of size", size)
         return population
 
-    def _select_chromosomes(self, population: list[list[bool]], items: list[KnapsackItem], capacity: int) -> tuple[list[bool], list[bool]]:
+    def _select_chromosomes(
+        self, population: list[list[bool]], items: list[KnapsackItem], capacity: int
+    ) -> tuple[list[bool], list[bool]]:
         fitness_values = []
         for chromosome in population:
             fitness_values.append(self._calculate_fitness(chromosome, items, capacity))
@@ -53,7 +54,6 @@ class GeneticKnapsackSolver(BaseSolver):
         parent1 = random.choices(population, weights=fitness_values, k=1)[0]
         parent2 = random.choices(population, weights=fitness_values, k=1)[0]
 
-        print("Selected two chromosomes for crossover")
         return parent1, parent2
 
     @staticmethod
@@ -84,7 +84,6 @@ class GeneticKnapsackSolver(BaseSolver):
             chromosome[mutation_point] = 1
         else:
             chromosome[mutation_point] = 0
-        print("Performed mutation on a chromosome")
         return chromosome
 
     def _get_best(self, population: list[list[bool]], items: list[KnapsackItem], capacity: int) -> list[KnapsackItem]:

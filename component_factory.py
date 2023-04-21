@@ -58,11 +58,17 @@ def get_config() -> Config:
         solvers_moderate_busy_threshold=int(os.getenv("SOLVERS_MODERATE_BUSY_THRESHOLD", "40")),
         solvers_busy_threshold=int(os.getenv("SOLVERS_BUSY_THRESHOLD", "60")),
         solvers_very_busy_threshold=int(os.getenv("SOLVERS_VERY_BUSY_THRESHOLD", "100")),
+        genetic_light_generations=int(os.getenv("GENETIC_LIGHT_GENERATIONS", "10")),
+        genetic_light_mutation_probability=float(os.getenv("GENETIC_LIGHT_MUTATION_PROBABILITY", "0.2")),
+        genetic_light_population=int(os.getenv("GENETIC_LIGHT_POPULATION", "10")),
+        genetic_heavy_generations=int(os.getenv("GENETIC_HEAVY_GENERATIONS", "40")),
+        genetic_heavy_mutation_probability=float(os.getenv("GENETIC_HEAVY_MUTATION_PROBABILITY", "0.2")),
+        genetic_heavy_population=int(os.getenv("GENETIC_HEAVY_POPULATION", "30")),
     )
 
 
-def get_solver_loader():
-    return SolverLoader()
+def get_solver_loader(config: Config = get_config()):
+    return SolverLoader(config)
 
 
 def get_algorithm_runner(solver_loader=get_solver_loader()) -> AlgorithmRunner:

@@ -82,6 +82,12 @@ async def config(hash_cleaner, queues_cleaner) -> Config:
         solvers_moderate_busy_threshold=original.solvers_moderate_busy_threshold,
         solvers_busy_threshold=original.solvers_busy_threshold,
         solvers_very_busy_threshold=original.solvers_very_busy_threshold,
+        genetic_light_generations=original.genetic_light_generations,
+        genetic_light_mutation_probability=original.genetic_light_mutation_probability,
+        genetic_light_population=original.genetic_light_population,
+        genetic_heavy_generations=original.genetic_heavy_generations,
+        genetic_heavy_mutation_probability=original.genetic_heavy_mutation_probability,
+        genetic_heavy_population=original.genetic_heavy_population,
     )
 
 
