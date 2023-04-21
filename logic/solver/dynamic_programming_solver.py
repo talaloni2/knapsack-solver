@@ -7,12 +7,11 @@ class KnapsackCell:
         self.total_value: int = total_value
         self.items: list[KnapsackItem] = items
 
-    def __lt__(self, other: 'KnapsackCell'):
+    def __lt__(self, other: "KnapsackCell"):
         return self.total_value < other.total_value
 
 
 class DynamicProgrammingSolver(BaseSolver):
-
     def solve(self, items: list[KnapsackItem], volume: int) -> list[KnapsackItem]:
         values = [i.value for i in items]
         volumes = [i.volume for i in items]
@@ -29,7 +28,9 @@ class DynamicProgrammingSolver(BaseSolver):
                 else:
                     upper_option: KnapsackCell = table[i - 1][j]
                     upper_value_minus_current_weight: KnapsackCell = table[i - 1][j - weights[i - 1]]
-                    new_option = KnapsackCell(upper_value_minus_current_weight.total_value + values[i - 1],
-                                              upper_value_minus_current_weight.items + [items[i - 1]])
+                    new_option = KnapsackCell(
+                        upper_value_minus_current_weight.total_value + values[i - 1],
+                        upper_value_minus_current_weight.items + [items[i - 1]],
+                    )
                     table[i][j] = max(upper_option, new_option)
         return table[n][capacity].items
