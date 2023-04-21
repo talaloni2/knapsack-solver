@@ -15,14 +15,14 @@ from models.subscription import SubscriptionScore
 @pytest.mark.parametrize(
     "availability,subscription,expected_algo",
     [
-        [ClusterAvailabilityScore.AVAILABLE, SubscriptionScore.STANDARD, Algorithms.GENETIC_LOTS_GENERATIONS],
-        [ClusterAvailabilityScore.MODERATE, SubscriptionScore.STANDARD, Algorithms.GENETIC_FEW_GENERATIONS],
+        [ClusterAvailabilityScore.AVAILABLE, SubscriptionScore.STANDARD, Algorithms.GENETIC_HEAVY],
+        [ClusterAvailabilityScore.MODERATE, SubscriptionScore.STANDARD, Algorithms.GENETIC_LIGHT],
         [ClusterAvailabilityScore.BUSY, SubscriptionScore.STANDARD, Algorithms.GREEDY],
         [ClusterAvailabilityScore.VERY_BUSY, SubscriptionScore.STANDARD, Algorithms.GREEDY],
         [ClusterAvailabilityScore.AVAILABLE, SubscriptionScore.PREMIUM, Algorithms.BRANCH_AND_BOUND],
         [ClusterAvailabilityScore.MODERATE, SubscriptionScore.PREMIUM, Algorithms.DYNAMIC_PROGRAMMING],
-        [ClusterAvailabilityScore.BUSY, SubscriptionScore.PREMIUM, Algorithms.GENETIC_LOTS_GENERATIONS],
-        [ClusterAvailabilityScore.VERY_BUSY, SubscriptionScore.PREMIUM, Algorithms.GENETIC_FEW_GENERATIONS],
+        [ClusterAvailabilityScore.BUSY, SubscriptionScore.PREMIUM, Algorithms.GENETIC_HEAVY],
+        [ClusterAvailabilityScore.VERY_BUSY, SubscriptionScore.PREMIUM, Algorithms.GENETIC_LIGHT],
     ],
 )
 async def test_algorithm_decider(

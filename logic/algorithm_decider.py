@@ -7,18 +7,18 @@ from models.subscription import SubscriptionScore
 _busyness_subscription_algo_mapping: dict[ClusterAvailabilityScore, dict[SubscriptionScore, Algorithms]] = {
     ClusterAvailabilityScore.AVAILABLE: {
         SubscriptionScore.PREMIUM: Algorithms.BRANCH_AND_BOUND,
-        SubscriptionScore.STANDARD: Algorithms.GENETIC_LOTS_GENERATIONS,
+        SubscriptionScore.STANDARD: Algorithms.GENETIC_HEAVY,
     },
     ClusterAvailabilityScore.MODERATE: {
         SubscriptionScore.PREMIUM: Algorithms.DYNAMIC_PROGRAMMING,
-        SubscriptionScore.STANDARD: Algorithms.GENETIC_FEW_GENERATIONS,
+        SubscriptionScore.STANDARD: Algorithms.GENETIC_LIGHT,
     },
     ClusterAvailabilityScore.BUSY: {
-        SubscriptionScore.PREMIUM: Algorithms.GENETIC_LOTS_GENERATIONS,
+        SubscriptionScore.PREMIUM: Algorithms.GENETIC_HEAVY,
         SubscriptionScore.STANDARD: Algorithms.GREEDY,
     },
     ClusterAvailabilityScore.VERY_BUSY: {
-        SubscriptionScore.PREMIUM: Algorithms.GENETIC_FEW_GENERATIONS,
+        SubscriptionScore.PREMIUM: Algorithms.GENETIC_LIGHT,
         SubscriptionScore.STANDARD: Algorithms.GREEDY,
     },
 }

@@ -37,6 +37,12 @@ def config_thresholds(config: Config, threshold_config: ThresholdParameters):
         solvers_moderate_busy_threshold=threshold_config.moderate,
         solvers_busy_threshold=threshold_config.busy,
         solvers_very_busy_threshold=threshold_config.very_busy,
+        genetic_light_generations=original.genetic_light_generations,
+        genetic_light_mutation_probability=original.genetic_light_mutation_probability,
+        genetic_light_population=original.genetic_light_population,
+        genetic_heavy_generations=original.genetic_heavy_generations,
+        genetic_heavy_mutation_probability=original.genetic_heavy_mutation_probability,
+        genetic_heavy_population=original.genetic_heavy_population,
     )
 
 

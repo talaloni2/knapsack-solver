@@ -10,8 +10,8 @@ from test.utils import get_random_string
 
 
 def test_algorithm_runner():
-    solver_loader = MagicMock(SolverLoader())
-    solver = MagicMock(BaseSolver())
+    solver_loader = MagicMock(SolverLoader)
+    solver = MagicMock(BaseSolver)
     expected_result = [KnapsackItem(id=get_random_string(), value=10, volume=1)]
     solver.solve = MagicMock(return_value=expected_result)
     solver_loader.load = MagicMock(return_value=solver)
