@@ -19,8 +19,9 @@ class GreedySolver(BaseSolver):
     def solve(self, items: list[KnapsackItem], volume: int) -> list[KnapsackItem]:
         sorted_items: list[SortableKnapsackItem] = self._sort_items_by_specific_weight_descending(items)
         picked_items = self._fill_sack(sorted_items, volume)
+        highest_value_item = max(*items, key=lambda item: item.value)
 
-        return picked_items
+        return max(picked_items, [highest_value_item], key=lambda itms: sum(i.value for i in itms))
 
     @staticmethod
     def _sort_items_by_specific_weight_descending(items: list[KnapsackItem]) -> list[SortableKnapsackItem]:
