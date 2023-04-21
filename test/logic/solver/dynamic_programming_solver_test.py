@@ -4,9 +4,11 @@ from test.utils import get_random_string
 
 
 def test_knapsack_dp():
-    items = [KnapsackItem(id=get_random_string(), volume=10, value=60),
-             KnapsackItem(id=get_random_string(), volume=20, value=100),
-             KnapsackItem(id=get_random_string(), volume=30, value=120)]
+    items = [
+        KnapsackItem(id=get_random_string(), volume=10, value=60),
+        KnapsackItem(id=get_random_string(), volume=20, value=100),
+        KnapsackItem(id=get_random_string(), volume=30, value=120),
+    ]
     capacity = 50
     result = DynamicProgrammingSolver().solve(items, capacity)
     assert items[1] in result
