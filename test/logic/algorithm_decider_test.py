@@ -36,8 +36,13 @@ async def test_algorithm_decider(
     subscriptions_service.get_subscription_score = AsyncMock(return_value=subscription)
     cluster_availability_service: ClusterAvailabilityService = AsyncMock()
     cluster_availability_service.get_cluster_availability_score = AsyncMock(return_value=availability)
-    decider = AlgorithmDecider(subscriptions_service, cluster_availability_service)
-    algo = await decider.decide(knapsack_id)
+    decider = AlgorithmDecider(
+        subscriptions_service,
+        cluster_availability_service,
+        config.algo_decider_branch_and_bound_max_items,
+        config.algo_decider_dynamic_programming_max_iterations,
+    )
+    algo = await decider.decide(knapsack_id, 10, 10)
 
     assert algo == expected_algo
 
@@ -52,7 +57,54 @@ async def test_algorithm_decider_handle_non_existing_score(config: Config, knaps
     subscriptions_service.get_subscription_score = AsyncMock(return_value=MockEnum.MOCK)
     cluster_availability_service: ClusterAvailabilityService = AsyncMock()
     cluster_availability_service.get_cluster_availability_score = AsyncMock(return_value=MockEnum.MOCK)
-    decider = AlgorithmDecider(subscriptions_service, cluster_availability_service)
-    algo = await decider.decide(knapsack_id)
+    decider = AlgorithmDecider(
+        subscriptions_service,
+        cluster_availability_service,
+        config.algo_decider_branch_and_bound_max_items,
+        config.algo_decider_dynamic_programming_max_iterations,
+    )
+    algo = await decider.decide(knapsack_id, 10, 10)
 
     assert algo == Algorithms.FIRST_FIT
+
+
+@pytest.mark.asyncio
+async def test_algorithm_decider_thresholds_bnb_to_dp(config: Config, knapsack_id: str):
+    subscriptions_service = AsyncMock()
+    subscriptions_service.get_subscription_score = AsyncMock(return_value=SubscriptionScore.PREMIUM)
+    cluster_availability_service: ClusterAvailabilityService = AsyncMock()
+    cluster_availability_service.get_cluster_availability_score = AsyncMock(
+        return_value=ClusterAvailabilityScore.AVAILABLE
+    )
+    decider = AlgorithmDecider(subscriptions_service, cluster_availability_service, 1, 1000)
+    algo = await decider.decide(knapsack_id, 2, 10)
+
+    assert algo == Algorithms.DYNAMIC_PROGRAMMING
+
+
+@pytest.mark.asyncio
+async def test_algorithm_decider_thresholds_bnb_to_genetic(config: Config, knapsack_id: str):
+    subscriptions_service = AsyncMock()
+    subscriptions_service.get_subscription_score = AsyncMock(return_value=SubscriptionScore.PREMIUM)
+    cluster_availability_service: ClusterAvailabilityService = AsyncMock()
+    cluster_availability_service.get_cluster_availability_score = AsyncMock(
+        return_value=ClusterAvailabilityScore.AVAILABLE
+    )
+    decider = AlgorithmDecider(subscriptions_service, cluster_availability_service, 1, 2)
+    algo = await decider.decide(knapsack_id, 2, 10)
+
+    assert algo == Algorithms.GENETIC_HEAVY
+
+
+@pytest.mark.asyncio
+async def test_algorithm_decider_thresholds_dp_to_genetic(config: Config, knapsack_id: str):
+    subscriptions_service = AsyncMock()
+    subscriptions_service.get_subscription_score = AsyncMock(return_value=SubscriptionScore.PREMIUM)
+    cluster_availability_service: ClusterAvailabilityService = AsyncMock()
+    cluster_availability_service.get_cluster_availability_score = AsyncMock(
+        return_value=ClusterAvailabilityScore.MODERATE
+    )
+    decider = AlgorithmDecider(subscriptions_service, cluster_availability_service, 1, 2)
+    algo = await decider.decide(knapsack_id, 2, 10)
+
+    assert algo == Algorithms.GENETIC_HEAVY

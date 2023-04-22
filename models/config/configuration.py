@@ -46,3 +46,6 @@ class Config(NamedTuple):
     genetic_heavy_generations: int
     genetic_heavy_mutation_probability: float
     genetic_heavy_population: int
+
+    algo_decider_branch_and_bound_max_items: int
+    algo_decider_dynamic_programming_max_iterations: int

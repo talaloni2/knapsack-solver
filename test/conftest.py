@@ -88,6 +88,8 @@ async def config(hash_cleaner, queues_cleaner) -> Config:
         genetic_heavy_generations=original.genetic_heavy_generations,
         genetic_heavy_mutation_probability=original.genetic_heavy_mutation_probability,
         genetic_heavy_population=original.genetic_heavy_population,
+        algo_decider_branch_and_bound_max_items=original.algo_decider_branch_and_bound_max_items,
+        algo_decider_dynamic_programming_max_iterations=original.algo_decider_dynamic_programming_max_iterations,
     )
 
 
