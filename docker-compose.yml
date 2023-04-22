@@ -44,6 +44,7 @@ services:
       - rabbit
       - redis
       - knapsack-solver
+      - subscriptions-backend
     ports:
       - '8001:8000'
     environment:
@@ -87,6 +88,17 @@ services:
       REDIS_HOST: redis
     networks:
       - everything
+
+  subscriptions-backend:
+    image: driveup-subscription-handler:0.0.1
+    restart: always
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: postgres
 
 volumes:
   db:
