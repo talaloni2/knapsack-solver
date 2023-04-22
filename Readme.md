@@ -16,7 +16,10 @@ Take a look at <code>component_factory.py</code> to see what environment variabl
 
 ##Running with docker
 Make sure you have docker installed
-* <code>cd</code> into the project directory.
+* clone the subscription handler repository: <url>https://github.com/avivaloni10/subscriptions_handler</url>
+* <code>cd</code> into the cloned directory.
+* execute <code>docker build -t driveup-subscription-handler:0.0.1 .</code>
+* <code>cd</code> into the knapsack-solver project directory.
 * execute <code>docker build -t knapsack-engine:0.0.1 .</code>
 * execute <code>docker-compose up -d</code>
   * If you wish to stop the dockers, execute: <code>docker-compose down</code>
