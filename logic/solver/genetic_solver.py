@@ -15,7 +15,7 @@ class GeneticSolver(BaseSolver):
 
     def _control_loop(self, items: list[KnapsackItem], capacity: int):
         items_count = len(items)
-        population = self._generate_population(self._initial_population_size, len(items))
+        population = self._generate_population(self._initial_population_size, items, capacity)
 
         for _ in range(self._generations):
             parent1, parent2 = self._select_chromosomes(population, items, capacity)
@@ -27,18 +27,22 @@ class GeneticSolver(BaseSolver):
             if random.uniform(0, 1) < self._mutation_probability:
                 child2 = self._mutate(child2, items_count)
 
-            population = [child1, child2] + population[2:]
+            population = self._new_generation(population, [child1, child2], items, capacity)
 
         return self._get_best(population, items, capacity)
 
     @staticmethod
-    def _generate_population(size: int, items_count: int) -> list[list[bool]]:
+    def _generate_population(size: int, items: list[KnapsackItem], capacity: int) -> list[list[bool]]:
         population = []
         for _ in range(size):
             genes = [False, True]
             chromosome = []
-            for _ in range(items_count):
+            for _ in range(len(items)):
                 chromosome.append(random.choice(genes))
+                if sum(k.value for i, k in enumerate(items) if i < len(chromosome) and chromosome[i]) > capacity:
+                    chromosome[-1] = False
+                    chromosome += ([False] * (len(items) - len(chromosome)))
+                    break
             population.append(chromosome)
         return population
 
@@ -49,7 +53,7 @@ class GeneticSolver(BaseSolver):
         for chromosome in population:
             fitness_values.append(self._calculate_fitness(chromosome, items, capacity))
 
-        fitness_values = [float(i) / sum(fitness_values) for i in fitness_values]
+        fitness_values = [float(i) / (sum(fitness_values) or 1) for i in fitness_values]
 
         parent1 = random.choices(population, weights=fitness_values, k=1)[0]
         parent2 = random.choices(population, weights=fitness_values, k=1)[0]
@@ -94,3 +98,28 @@ class GeneticSolver(BaseSolver):
         max_value = max(fitness_values)
         max_index = fitness_values.index(max_value)
         return [items[i] for i, include in enumerate(population[max_index]) if include]
+
+    def _new_generation(self, population: list[list[bool]], children: list[list[bool]], items: list[KnapsackItem], capacity: int):
+        population = self._mutate_misfits(population, items, capacity)
+        return self._replace_children_into_population(population, children, items, capacity)
+
+    def _mutate_misfits(self, population: list[list[bool]], items: list[KnapsackItem], capacity: int) -> list[list[bool]]:
+        for i, chromosome in enumerate(population):
+            if not self._calculate_fitness(chromosome, items, capacity):
+                population[i] = self._mutate(chromosome, len(items))
+        return population
+
+    def _replace_children_into_population(self, population: list[list[bool]], children: list[list[bool]], items: list[KnapsackItem], capacity: int) -> list[list[bool]]:
+        child_idx = 0
+        for i, chromosome in enumerate(population):
+            if not self._calculate_fitness(chromosome, items, capacity):
+                population[i] = children[child_idx]
+                child_idx += 1
+            if child_idx == len(children):
+                return population
+
+        while child_idx < len(children):
+            child_loc = random.randint(0, len(population) - 1)
+            population[child_loc] = children[child_idx]
+            child_idx += 1
+        return population
