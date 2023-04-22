@@ -9,7 +9,7 @@ from component_factory import get_solution_reporter
 from logic.suggested_solution_service import SuggestedSolutionsService
 from models.config.configuration import Config
 from models.knapsack_item import KnapsackItem
-from models.solution import SolutionReport, SolutionReportCause
+from models.solution import SolutionReport, SolutionReportCause, AlgorithmSolution
 from test.utils import get_random_string
 
 
@@ -24,7 +24,7 @@ async def test_solution_reporter_report_suggestion(
 ):
     register_solution_spy = mocker.spy(solution_suggestions_service, "register_suggested_solutions")
     solution_reporter = get_solution_reporter(config=config, suggested_solutions_service=solution_suggestions_service)
-    expected_solutions = [[KnapsackItem(id=get_random_string(), value=1, volume=1)]]
+    expected_solutions = [AlgorithmSolution(items=[KnapsackItem(id=get_random_string(), value=1, volume=1)])]
     expected_response = SolutionReport(cause=SolutionReportCause.SOLUTION_FOUND)
 
     await solution_reporter.report_solution_suggestions(expected_solutions, knapsack_id)

@@ -10,7 +10,7 @@ from logic.suggested_solution_service import SuggestedSolutionsService
 from logic.time_service import TimeService
 from models.config.configuration import Config
 from models.knapsack_item import KnapsackItem
-from models.solution import SuggestedSolution, AcceptedSolution
+from models.solution import SuggestedSolution, AcceptedSolution, AlgorithmSolution
 from models.suggested_solutions_actions_statuses import RejectResult, AcceptResult
 from test.utils import get_random_string
 
@@ -25,9 +25,9 @@ async def test_register_suggested_solutions(
 ):
     expected_time = datetime.now()
     time_service_mock.now = MagicMock(return_value=expected_time)
-    expected_solutions: list[list[KnapsackItem]] = [
-        [KnapsackItem(id=get_random_string(), value=1, volume=1)],
-        [KnapsackItem(id=get_random_string(), value=1, volume=1)],
+    expected_solutions: list[AlgorithmSolution] = [
+        AlgorithmSolution(items=[KnapsackItem(id=get_random_string(), value=1, volume=1)]),
+        AlgorithmSolution(items=[KnapsackItem(id=get_random_string(), value=1, volume=1)]),
     ]
     await solution_suggestions_service_with_mocks.register_suggested_solutions(expected_solutions, knapsack_id)
 
@@ -59,10 +59,10 @@ async def test_accept_suggested_solution(
     chosen_solution_id: str = get_random_string()
     first_released_item = KnapsackItem(id=get_random_string(), value=1, volume=1)
     second_released_item = KnapsackItem(id=get_random_string(), value=1, volume=1)
-    all_solutions: dict[str, list[KnapsackItem]] = {
-        get_random_string(): [first_released_item, shared_item_between_solutions],
-        get_random_string(): [second_released_item],
-        chosen_solution_id: expected_solution,
+    all_solutions: dict[str, AlgorithmSolution] = {
+        get_random_string(): AlgorithmSolution(items=[first_released_item, shared_item_between_solutions]),
+        get_random_string(): AlgorithmSolution(items=[second_released_item]),
+        chosen_solution_id: AlgorithmSolution(items=expected_solution),
     }
     solution_suggestions_service_with_mocks.get_solutions = AsyncMock(
         return_value=SuggestedSolution(solutions=all_solutions, time=expected_time)
@@ -137,7 +137,7 @@ async def test_accept_suggested_solution_solution_deleted(
 async def test_is_solution_exists(solution_suggestions_service_with_mocks: SuggestedSolutionsService, knapsack_id: str):
     solution_id = get_random_string()
     suggested_solution = SuggestedSolution(
-        time=datetime.now(), solutions={solution_id: [KnapsackItem(id=get_random_string(), volume=1, value=1)]}
+        time=datetime.now(), solutions={solution_id: AlgorithmSolution(items=[KnapsackItem(id=get_random_string(), volume=1, value=1)])}
     )
     solution_suggestions_service_with_mocks.get_solutions = AsyncMock(return_value=suggested_solution)
 
@@ -165,7 +165,7 @@ async def test_is_solution_exists_suggestion_exists_solution_not_exists(
     solution_suggestions_service_with_mocks: SuggestedSolutionsService, knapsack_id: str
 ):
     suggested_solution = SuggestedSolution(
-        time=datetime.now(), solutions={get_random_string(): [KnapsackItem(id=get_random_string(), volume=1, value=1)]}
+        time=datetime.now(), solutions={get_random_string(): AlgorithmSolution(items=[KnapsackItem(id=get_random_string(), volume=1, value=1)])}
     )
     solution_suggestions_service_with_mocks.get_solutions = AsyncMock(return_value=suggested_solution)
 
@@ -184,7 +184,7 @@ async def test_get_solutions(
     config: Config,
 ):
     expected_solution = SuggestedSolution(
-        time=datetime.now(), solutions={get_random_string(): [KnapsackItem(id=get_random_string(), volume=1, value=1)]}
+        time=datetime.now(), solutions={get_random_string(): AlgorithmSolution(items=[KnapsackItem(id=get_random_string(), volume=1, value=1)])}
     )
     redis_mock.hget = AsyncMock(return_value=expected_solution.json().encode())
 
@@ -220,8 +220,8 @@ async def test_reject_suggested_solutions(
     first_released_item = KnapsackItem(id=get_random_string(), value=1, volume=1)
     second_released_item = KnapsackItem(id=get_random_string(), value=1, volume=1)
     all_solutions: dict[str, list[KnapsackItem]] = {
-        get_random_string(): [first_released_item],
-        get_random_string(): [second_released_item],
+        get_random_string(): AlgorithmSolution(items=[first_released_item]),
+        get_random_string(): AlgorithmSolution(items=[second_released_item]),
     }
     solution_suggestions_service_with_mocks.get_solutions = AsyncMock(
         return_value=SuggestedSolution(solutions=all_solutions, time=datetime.now())

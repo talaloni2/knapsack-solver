@@ -26,7 +26,7 @@ async def test_solver_consumer_consume(rabbit_channel: aio_pika.abc.AbstractChan
         items=expected_result + non_accepted_items,
         volume=1,
         knapsack_id=get_random_string(),
-        algorithm=Algorithms.FIRST_FIT,
+        algorithms=[Algorithms.FIRST_FIT],
     )
 
     producer = SolverRouterProducer(rabbit_channel, config.solver_queue)
@@ -52,7 +52,7 @@ async def test_solver_consumer_consume(rabbit_channel: aio_pika.abc.AbstractChan
         await asyncio.sleep(1)
         consume_task.cancel()
 
-    algorithm_runner.run_algorithm.assert_called_once()
+    algorithm_runner.run_algorithms.assert_called_once()
     items_claimer.claim_items.assert_called_once()
     items_claimer.release_items_claims.assert_called_once()
     solution_reporter.report_solution_suggestions.assert_called_once()

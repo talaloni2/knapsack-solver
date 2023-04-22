@@ -12,7 +12,7 @@ from models.algorithms import Algorithms
 from models.config.configuration import Config
 from models.knapsack_item import KnapsackItem
 from models.knapsack_solver_instance_dto import SolverInstanceRequest
-from models.solution import SolutionReportCause
+from models.solution import SolutionReportCause, AlgorithmSolution
 from test.utils import get_random_string
 
 
@@ -25,7 +25,7 @@ async def test_solver_consumer_claims(config: Config):
         items=solution_request_items,
         volume=1,
         knapsack_id=get_random_string(),
-        algorithm=Algorithms.FIRST_FIT,
+        algorithms=[Algorithms.FIRST_FIT],
     )
 
     channel_context = await _mock_channel_with_messages(request)
@@ -33,7 +33,7 @@ async def test_solver_consumer_claims(config: Config):
     items_claimer.claim_items = AsyncMock(return_value=solution_request_items)
     solution_reporter = AsyncMock(SolutionReporter)
     algorithm_runner = MagicMock(AlgorithmRunner)
-    algorithm_runner.run_algorithm = MagicMock(return_value=expected_result)
+    algorithm_runner.run_algorithms = MagicMock(return_value=[expected_result])
     solution_suggestion_service = AsyncMock(SuggestedSolutionsService)
     solution_suggestion_service.get_solutions = AsyncMock(return_value=None)
 
@@ -44,7 +44,7 @@ async def test_solver_consumer_claims(config: Config):
     async with consumer:
         await consumer.start_consuming(config.solver_queue)
 
-    algorithm_runner.run_algorithm.assert_called_once()
+    algorithm_runner.run_algorithms.assert_called_once()
     items_claimer.claim_items.assert_called_once()
     items_claimer.release_items_claims.assert_called_once_with(non_accepted_items)
     solution_reporter.report_solution_suggestions.assert_called_once()
@@ -56,7 +56,7 @@ async def test_solver_consumer_suggestion_already_exists(config: Config, knapsac
         items=[KnapsackItem(id=get_random_string(), value=1, volume=1)],
         volume=1,
         knapsack_id=knapsack_id,
-        algorithm=Algorithms.FIRST_FIT,
+        algorithms=[Algorithms.FIRST_FIT],
     )
 
     channel_context = await _mock_channel_with_messages(request)
@@ -89,7 +89,7 @@ async def test_solver_knapsack_already_running(config: Config, knapsack_id: str)
         items=expected_solution,
         volume=1,
         knapsack_id=knapsack_id,
-        algorithm=Algorithms.FIRST_FIT,
+        algorithms=[Algorithms.FIRST_FIT],
     )
 
     channel_context = await _mock_channel_with_messages(request, request)
@@ -99,7 +99,7 @@ async def test_solver_knapsack_already_running(config: Config, knapsack_id: str)
     claims_service.release_claim_running_knapsack = AsyncMock()
     solution_reporter = AsyncMock(SolutionReporter)
     algorithm_runner = MagicMock(AlgorithmRunner)
-    algorithm_runner.run_algorithm = MagicMock(return_value=expected_solution)
+    algorithm_runner.run_algorithms = MagicMock(return_value=[expected_solution])
     solution_suggestion_service = AsyncMock(SuggestedSolutionsService)
     solution_suggestion_service.get_solutions = AsyncMock(return_value=None)
 
@@ -110,8 +110,8 @@ async def test_solver_knapsack_already_running(config: Config, knapsack_id: str)
     async with consumer:
         await consumer.start_consuming(config.solver_queue)
 
-    solution_reporter.report_solution_suggestions.assert_called_once_with([expected_solution], knapsack_id)
-    algorithm_runner.run_algorithm.assert_called_once_with(request.items, request.volume, request.algorithm)
+    solution_reporter.report_solution_suggestions.assert_called_once_with([AlgorithmSolution(items=expected_solution)], knapsack_id)
+    algorithm_runner.run_algorithms.assert_called_once_with(request.items, request.volume, request.algorithms)
     claims_service.claim_items.assert_called_once_with(request.items, request.volume, request.knapsack_id)
     claims_service.release_items_claims.assert_called_once_with([])
     claims_service.release_claim_running_knapsack.assert_called_once_with(knapsack_id)

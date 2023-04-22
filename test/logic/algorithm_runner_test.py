@@ -18,7 +18,7 @@ def test_algorithm_runner():
     runner = AlgorithmRunner(solver_loader)
     random_volume = random.randint(1, 5)
 
-    result = runner.run_algorithm(expected_result, random_volume, MagicMock(Algorithms))
+    result = runner.run_algorithms(expected_result, random_volume, [MagicMock(Algorithms)])[0]
 
     assert expected_result == result
     solver_loader.load.assert_called_once()

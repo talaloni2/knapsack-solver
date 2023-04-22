@@ -7,4 +7,4 @@ class SolverInstanceRequest(BaseModel):
     items: list[KnapsackItem]
     volume: int
     knapsack_id: str
-    algorithm: Algorithms
+    algorithms: list[Algorithms]

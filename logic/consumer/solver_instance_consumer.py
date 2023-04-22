@@ -1,4 +1,5 @@
 import json
+import traceback
 from typing import Optional
 
 import aio_pika
@@ -9,9 +10,10 @@ from logic.claims_service import ClaimsService
 from logic.rabbit_channel_context import RabbitChannelContext
 from logic.solution_reporter import SolutionReporter
 from logic.suggested_solution_service import SuggestedSolutionsService
+from models.algorithms import Algorithms
 from models.knapsack_item import KnapsackItem
 from models.knapsack_solver_instance_dto import SolverInstanceRequest
-from models.solution import SolutionReportCause
+from models.solution import SolutionReportCause, AlgorithmSolution
 
 
 class SolverInstanceConsumer:
@@ -72,13 +74,21 @@ class SolverInstanceConsumer:
 
             claimed_items: list[KnapsackItem] = await self._try_claim_items(request)
             if not claimed_items:
+                await self._solution_reporter.report_error(
+                    request.knapsack_id, SolutionReportCause.NO_ITEM_CLAIMED
+                )
                 return
 
-            solution = self._algo_runner.run_algorithm(claimed_items, request.volume, request.algorithm)
-            await self._release_non_needed_items(claimed_items, solution)
-            await self._solution_reporter.report_solution_suggestions([solution], request.knapsack_id)
+            solutions = self._algo_runner.run_algorithms(claimed_items, request.volume, request.algorithms)
+            solutions_with_algos = list(zip(request.algorithms, solutions))
+            await self._release_non_needed_items(claimed_items, solutions)
+            solutions = self._dedup_solutions(solutions_with_algos)
+            solutions = [AlgorithmSolution(algorithm=alg, items=sol) for alg, sol in solutions]
+            await self._solution_reporter.report_solution_suggestions(solutions, request.knapsack_id)
         except Exception as e:
-            print(e)
+            await self._claims_service.release_items_claims(request.items)
+            await self._solution_reporter.report_error(request.knapsack_id, SolutionReportCause.GOT_EXCEPTION)
+            traceback.print_exc()
         finally:
             if request:
                 await self._claims_service.release_claim_running_knapsack(request.knapsack_id)
@@ -101,11 +111,15 @@ class SolverInstanceConsumer:
             return
         return claimed_items
 
-    async def _release_non_needed_items(self, claimed_items: list[KnapsackItem], solution: list[KnapsackItem]) -> None:
-        solution_ids = {n.id for n in solution}
+    async def _release_non_needed_items(self, claimed_items: list[KnapsackItem], solutions: list[list[KnapsackItem]]) -> None:
+        solution_ids = {n.id for s in solutions for n in s}
         released_items = [i for i in claimed_items if i.id not in solution_ids]
 
         await self._claims_service.release_items_claims(released_items)
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self._channel_context.__aexit__(exc_type, exc_val, exc_tb)
+
+    def _dedup_solutions(self, solutions: list[tuple[Algorithms, list[KnapsackItem]]]) -> list[tuple[Algorithms, list[KnapsackItem]]]:
+        seen = list()
+        return [seen.append(sol) or (alg, sol) for alg, sol in solutions if sol not in seen]
