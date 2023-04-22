@@ -41,7 +41,7 @@ class GeneticSolver(BaseSolver):
                 chromosome.append(random.choice(genes))
                 if sum(k.value for i, k in enumerate(items) if i < len(chromosome) and chromosome[i]) > capacity:
                     chromosome[-1] = False
-                    chromosome += ([False] * (len(items) - len(chromosome)))
+                    chromosome += [False] * (len(items) - len(chromosome))
                     break
             population.append(chromosome)
         return population
@@ -99,17 +99,23 @@ class GeneticSolver(BaseSolver):
         max_index = fitness_values.index(max_value)
         return [items[i] for i, include in enumerate(population[max_index]) if include]
 
-    def _new_generation(self, population: list[list[bool]], children: list[list[bool]], items: list[KnapsackItem], capacity: int):
+    def _new_generation(
+        self, population: list[list[bool]], children: list[list[bool]], items: list[KnapsackItem], capacity: int
+    ):
         population = self._mutate_misfits(population, items, capacity)
         return self._replace_children_into_population(population, children, items, capacity)
 
-    def _mutate_misfits(self, population: list[list[bool]], items: list[KnapsackItem], capacity: int) -> list[list[bool]]:
+    def _mutate_misfits(
+        self, population: list[list[bool]], items: list[KnapsackItem], capacity: int
+    ) -> list[list[bool]]:
         for i, chromosome in enumerate(population):
             if not self._calculate_fitness(chromosome, items, capacity):
                 population[i] = self._mutate(chromosome, len(items))
         return population
 
-    def _replace_children_into_population(self, population: list[list[bool]], children: list[list[bool]], items: list[KnapsackItem], capacity: int) -> list[list[bool]]:
+    def _replace_children_into_population(
+        self, population: list[list[bool]], children: list[list[bool]], items: list[KnapsackItem], capacity: int
+    ) -> list[list[bool]]:
         child_idx = 0
         for i, chromosome in enumerate(population):
             if not self._calculate_fitness(chromosome, items, capacity):

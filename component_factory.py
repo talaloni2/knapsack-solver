@@ -64,6 +64,10 @@ def get_config() -> Config:
         genetic_heavy_generations=int(os.getenv("GENETIC_HEAVY_GENERATIONS", "40")),
         genetic_heavy_mutation_probability=float(os.getenv("GENETIC_HEAVY_MUTATION_PROBABILITY", "0.2")),
         genetic_heavy_population=int(os.getenv("GENETIC_HEAVY_POPULATION", "30")),
+        algo_decider_branch_and_bound_max_items=int(os.getenv("ALGO_DECIDER_BRANCH_AND_BOUND_MAX_ITEMS", "15")),
+        algo_decider_dynamic_programming_max_iterations=int(
+            os.getenv("ALGO_DECIDER_DYNAMIC_PROGRAMMING_MAX_ITERATIONS", "10000")
+        ),
     )
 
 
@@ -123,8 +127,14 @@ def get_cluster_availability_service_api(
 def get_algorithm_decider_api(
     subscriptions_service: SubscriptionsService = Depends(get_subscriptions_service),
     cluster_availability_service: ClusterAvailabilityService = Depends(get_cluster_availability_service_api),
+    config: Config = Depends(get_config),
 ) -> AlgorithmDecider:
-    return AlgorithmDecider(subscriptions_service, cluster_availability_service)
+    return AlgorithmDecider(
+        subscriptions_service,
+        cluster_availability_service,
+        config.algo_decider_branch_and_bound_max_items,
+        config.algo_decider_dynamic_programming_max_iterations,
+    )
 
 
 def get_time_service() -> TimeService:
