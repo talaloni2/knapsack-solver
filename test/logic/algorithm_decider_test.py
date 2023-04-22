@@ -13,22 +13,22 @@ from models.subscription import SubscriptionScore
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "availability,subscription,expected_algo",
+    "availability,subscription,expected_algos",
     [
-        [ClusterAvailabilityScore.AVAILABLE, SubscriptionScore.STANDARD, Algorithms.GENETIC_HEAVY],
-        [ClusterAvailabilityScore.MODERATE, SubscriptionScore.STANDARD, Algorithms.GENETIC_LIGHT],
-        [ClusterAvailabilityScore.BUSY, SubscriptionScore.STANDARD, Algorithms.GREEDY],
-        [ClusterAvailabilityScore.VERY_BUSY, SubscriptionScore.STANDARD, Algorithms.GREEDY],
-        [ClusterAvailabilityScore.AVAILABLE, SubscriptionScore.PREMIUM, Algorithms.BRANCH_AND_BOUND],
-        [ClusterAvailabilityScore.MODERATE, SubscriptionScore.PREMIUM, Algorithms.DYNAMIC_PROGRAMMING],
-        [ClusterAvailabilityScore.BUSY, SubscriptionScore.PREMIUM, Algorithms.GENETIC_HEAVY],
-        [ClusterAvailabilityScore.VERY_BUSY, SubscriptionScore.PREMIUM, Algorithms.GENETIC_LIGHT],
+        [ClusterAvailabilityScore.AVAILABLE, SubscriptionScore.STANDARD, [Algorithms.GENETIC_HEAVY, Algorithms.GENETIC_LIGHT, Algorithms.GREEDY]],
+        [ClusterAvailabilityScore.MODERATE, SubscriptionScore.STANDARD, [Algorithms.GENETIC_LIGHT, Algorithms.GENETIC_LIGHT, Algorithms.GREEDY]],
+        [ClusterAvailabilityScore.BUSY, SubscriptionScore.STANDARD, [Algorithms.GREEDY]],
+        [ClusterAvailabilityScore.VERY_BUSY, SubscriptionScore.STANDARD, [Algorithms.GREEDY]],
+        [ClusterAvailabilityScore.AVAILABLE, SubscriptionScore.PREMIUM, [Algorithms.BRANCH_AND_BOUND, Algorithms.GENETIC_HEAVY, Algorithms.GENETIC_LIGHT, Algorithms.GREEDY]],
+        [ClusterAvailabilityScore.MODERATE, SubscriptionScore.PREMIUM, [Algorithms.DYNAMIC_PROGRAMMING, Algorithms.GENETIC_HEAVY, Algorithms.GENETIC_LIGHT, Algorithms.GREEDY]],
+        [ClusterAvailabilityScore.BUSY, SubscriptionScore.PREMIUM, [Algorithms.GENETIC_HEAVY]],
+        [ClusterAvailabilityScore.VERY_BUSY, SubscriptionScore.PREMIUM, [Algorithms.GENETIC_LIGHT]],
     ],
 )
 async def test_algorithm_decider(
     availability: ClusterAvailabilityScore,
     subscription: SubscriptionScore,
-    expected_algo: Algorithms,
+    expected_algos: list[Algorithms],
     config: Config,
     knapsack_id: str,
 ):
@@ -42,9 +42,9 @@ async def test_algorithm_decider(
         config.algo_decider_branch_and_bound_max_items,
         config.algo_decider_dynamic_programming_max_iterations,
     )
-    algo = await decider.decide(knapsack_id, 10, 10)
+    algos = await decider.decide(knapsack_id, 10, 10)
 
-    assert algo == expected_algo
+    assert algos == expected_algos
 
 
 class MockEnum(int, Enum):
@@ -65,7 +65,7 @@ async def test_algorithm_decider_handle_non_existing_score(config: Config, knaps
     )
     algo = await decider.decide(knapsack_id, 10, 10)
 
-    assert algo == Algorithms.FIRST_FIT
+    assert algo == [Algorithms.FIRST_FIT]
 
 
 @pytest.mark.asyncio
@@ -79,7 +79,7 @@ async def test_algorithm_decider_thresholds_bnb_to_dp(config: Config, knapsack_i
     decider = AlgorithmDecider(subscriptions_service, cluster_availability_service, 1, 1000)
     algo = await decider.decide(knapsack_id, 2, 10)
 
-    assert algo == Algorithms.DYNAMIC_PROGRAMMING
+    assert algo == [Algorithms.DYNAMIC_PROGRAMMING, Algorithms.GENETIC_HEAVY, Algorithms.GENETIC_LIGHT, Algorithms.GREEDY]
 
 
 @pytest.mark.asyncio
@@ -93,7 +93,7 @@ async def test_algorithm_decider_thresholds_bnb_to_genetic(config: Config, knaps
     decider = AlgorithmDecider(subscriptions_service, cluster_availability_service, 1, 2)
     algo = await decider.decide(knapsack_id, 2, 10)
 
-    assert algo == Algorithms.GENETIC_HEAVY
+    assert algo == [Algorithms.GENETIC_HEAVY, Algorithms.GENETIC_HEAVY, Algorithms.GENETIC_LIGHT, Algorithms.GREEDY]
 
 
 @pytest.mark.asyncio
@@ -107,4 +107,4 @@ async def test_algorithm_decider_thresholds_dp_to_genetic(config: Config, knapsa
     decider = AlgorithmDecider(subscriptions_service, cluster_availability_service, 1, 2)
     algo = await decider.decide(knapsack_id, 2, 10)
 
-    assert algo == Algorithms.GENETIC_HEAVY
+    assert algo == [Algorithms.GENETIC_HEAVY, Algorithms.GENETIC_HEAVY, Algorithms.GENETIC_LIGHT, Algorithms.GREEDY]

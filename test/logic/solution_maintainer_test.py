@@ -10,7 +10,7 @@ from logic.suggested_solution_service import SuggestedSolutionsService
 from logic.time_service import TimeService
 from models.config.configuration import Config
 from models.knapsack_item import KnapsackItem
-from models.solution import SuggestedSolution, AcceptedSolution
+from models.solution import SuggestedSolution, AcceptedSolution, AlgorithmSolution
 from models.suggested_solutions_actions_statuses import RejectResult
 from test.utils import get_random_string
 
@@ -62,7 +62,7 @@ async def test_clean_old_suggestions_sanity(
 ):
     redis_mock.hscan_iter = MockHscanIter(knapsack_id)
     expired_time = time_service_mock.now() - timedelta(config.suggestion_ttl_seconds + 1)
-    expired_solution = SuggestedSolution(time=expired_time, solutions={get_random_string(): []})
+    expired_solution = SuggestedSolution(time=expired_time, solutions={get_random_string(): AlgorithmSolution(items=[])})
     solution_suggestions_service_with_mocks.get_solutions = AsyncMock(return_value=expired_solution)
     solution_suggestions_service_with_mocks.reject_suggested_solutions = AsyncMock()
 
@@ -103,7 +103,7 @@ async def test_clean_old_suggestions_error_result_still_working(
 ):
     redis_mock.hscan_iter = MockHscanIter(knapsack_id)
     expired_time = time_service_mock.now() - timedelta(config.suggestion_ttl_seconds + 1)
-    expired_solution = SuggestedSolution(time=expired_time, solutions={get_random_string(): []})
+    expired_solution = SuggestedSolution(time=expired_time, solutions={get_random_string(): AlgorithmSolution(items=[])})
     solution_suggestions_service_with_mocks.get_solutions = AsyncMock(return_value=expired_solution)
     solution_suggestions_service_with_mocks.reject_suggested_solutions = AsyncMock(return_value=result)
 
@@ -124,9 +124,9 @@ async def test_clean_old_suggestions_keep_non_expired_suggestions(
     non_expired_knapsack_id = get_random_string()
     redis_mock.hscan_iter = MockHscanIter(knapsack_id, non_expired_knapsack_id)
     expired_time = time_service_mock.now() - timedelta(config.suggestion_ttl_seconds + 1)
-    expired_solution = SuggestedSolution(time=expired_time, solutions={get_random_string(): []})
+    expired_solution = SuggestedSolution(time=expired_time, solutions={get_random_string(): AlgorithmSolution(items=[])})
     non_expired_time = time_service_mock.now()
-    non_expired_solution = SuggestedSolution(time=non_expired_time, solutions={get_random_string(): []})
+    non_expired_solution = SuggestedSolution(time=non_expired_time, solutions={get_random_string(): AlgorithmSolution(items=[])})
     solution_suggestions_service_with_mocks.get_solutions = AsyncMock(
         side_effect=[expired_solution, non_expired_solution]
     )

@@ -19,7 +19,7 @@ async def test_solver_router_producer(rabbit_channel: aio_pika.abc.AbstractChann
         items=expected_items,
         volume=1,
         knapsack_id=get_random_string(),
-        algorithm=Algorithms.GREEDY,
+        algorithms=[Algorithms.GREEDY],
     )
     async with producer:
         await producer.produce_solver_instance_request(request)

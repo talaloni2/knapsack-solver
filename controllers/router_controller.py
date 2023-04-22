@@ -52,9 +52,9 @@ async def route_solve(
 async def _generate_solve_request(
     algorithm_decider: AlgorithmDecider, request: RouterSolveRequest
 ) -> SolverInstanceRequest:
-    requested_algorithm = await algorithm_decider.decide(request.knapsack_id, len(request.items), request.volume)
+    requested_algorithms = await algorithm_decider.decide(request.knapsack_id, len(request.items), request.volume)
     solver_instance_request = SolverInstanceRequest(
-        items=request.items, volume=request.volume, knapsack_id=request.knapsack_id, algorithm=requested_algorithm
+        items=request.items, volume=request.volume, knapsack_id=request.knapsack_id, algorithms=requested_algorithms
     )
     return solver_instance_request
 

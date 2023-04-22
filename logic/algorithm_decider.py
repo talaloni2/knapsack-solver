@@ -37,7 +37,7 @@ class AlgorithmDecider:
         self._branch_and_bound_max_items = branch_and_bound_max_items
         self._dynamic_programming_max_iterations = dynamic_programming_max_iterations
 
-    async def decide(self, knapsack_id: str, items_count: int, capacity: int) -> Algorithms:
+    async def decide(self, knapsack_id: str, items_count: int, capacity: int) -> list[Algorithms]:
         availability = await self._cluster_availability_service.get_cluster_availability_score()
         subscription_score = await self._subscriptions_service.get_subscription_score(knapsack_id)
         algo = _busyness_subscription_algo_mapping.get(availability, {}).get(subscription_score)
@@ -47,9 +47,10 @@ class AlgorithmDecider:
                 f"and subscription {subscription_score.name} given to knapsack {knapsack_id}. "
                 "Returning lightest algorithm"
             )
-            return Algorithms.FIRST_FIT
+            return [Algorithms.FIRST_FIT]
         algo = await self._include_complexity_in_decision(algo, capacity, items_count)
-        return algo
+        extra_algorithms = self._get_extra_algorithms(availability, subscription_score)
+        return [algo] + extra_algorithms
 
     async def _include_complexity_in_decision(self, algo, capacity, items_count):
         if algo == Algorithms.BRANCH_AND_BOUND and items_count > self._branch_and_bound_max_items:
@@ -57,3 +58,12 @@ class AlgorithmDecider:
         if algo == Algorithms.DYNAMIC_PROGRAMMING and capacity * items_count > self._dynamic_programming_max_iterations:
             algo = Algorithms.GENETIC_HEAVY
         return algo
+
+    @staticmethod
+    def _get_extra_algorithms(availability: ClusterAvailabilityScore, subscription_score: SubscriptionScore):
+        if availability <= ClusterAvailabilityScore.BUSY:
+            return []
+        if subscription_score >= SubscriptionScore.PREMIUM:
+            return [Algorithms.GENETIC_HEAVY, Algorithms.GENETIC_LIGHT, Algorithms.GREEDY]
+
+        return [Algorithms.GENETIC_LIGHT, Algorithms.GREEDY]

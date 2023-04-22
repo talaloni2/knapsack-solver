@@ -11,7 +11,7 @@ from logic.suggested_solution_service import SuggestedSolutionsService
 from models.config.configuration import Config
 from models.knapsack_item import KnapsackItem
 from models.knapsack_router_dto import RouterSolveRequest
-from models.solution import SuggestedSolution
+from models.solution import SuggestedSolution, AlgorithmSolution
 from server import app
 from test.utils import get_random_string
 
@@ -44,10 +44,10 @@ async def test_router_controller_endpoint_sanity(
     request_task = asyncio.create_task(test_client.post("/knapsack-router/solve", json=request.dict()))
 
     await asyncio.sleep(0.2)
-    await solution_reporter.report_solution_suggestions([[expected_item]], knapsack_id)
+    await solution_reporter.report_solution_suggestions([AlgorithmSolution(items=[expected_item])], knapsack_id)
 
     response = await request_task
     assert response.status_code == HTTPStatus.OK
     deserialized_response = SuggestedSolution(**response.json())
     assert len(deserialized_response.solutions.values()) == 1
-    assert next(iter(deserialized_response.solutions.values()))[0] == expected_item
+    assert next(iter(deserialized_response.solutions.values())).items[0] == expected_item

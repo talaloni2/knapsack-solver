@@ -7,7 +7,7 @@ from aioredis import Redis
 from logic.claims_service import ClaimsService
 from logic.time_service import TimeService
 from models.knapsack_item import KnapsackItem
-from models.solution import SuggestedSolution, AcceptedSolution
+from models.solution import SuggestedSolution, AcceptedSolution, AlgorithmSolution
 from models.suggested_solutions_actions_statuses import AcceptResult, RejectResult
 
 
@@ -26,7 +26,7 @@ class SuggestedSolutionsService:
         self._solution_suggestions_hash_name = solution_suggestions_hash_name
         self._accepted_suggestions_list_name = accepted_suggestions_list_name
 
-    async def register_suggested_solutions(self, solutions: list[list[KnapsackItem]], knapsack_id: str) -> None:
+    async def register_suggested_solutions(self, solutions: list[AlgorithmSolution], knapsack_id: str) -> None:
         solution_suggestion = SuggestedSolution(
             time=self._time_service.now(), solutions=self._assign_ids_to_suggested_solutions(solutions)
         )
@@ -41,7 +41,7 @@ class SuggestedSolutionsService:
             solutions_suggestions = await self.get_solutions(knapsack_id)
             if not solutions_suggestions:
                 return AcceptResult.SOLUTION_NOT_EXISTS
-            accepted_solution_items: list[KnapsackItem] = solutions_suggestions.solutions[solution_id]
+            accepted_solution_items: AlgorithmSolution = solutions_suggestions.solutions[solution_id]
             await self._release_claims_of_non_accepted_solutions(accepted_solution_items, solutions_suggestions)
             await self._perform_accept_single_solution(accepted_solution_items, knapsack_id)
         finally:
@@ -58,7 +58,7 @@ class SuggestedSolutionsService:
             if not solutions_suggestions:
                 return RejectResult.SUGGESTION_NOT_EXISTS
             await self._release_claims_of_non_accepted_solutions(
-                accepted_solution=[], solutions_suggestions=solutions_suggestions
+                accepted_solution=AlgorithmSolution(items=[]), solutions_suggestions=solutions_suggestions
             )
             await self._remove_solution_suggestion(knapsack_id)
         finally:
@@ -83,16 +83,16 @@ class SuggestedSolutionsService:
         return SuggestedSolution(**json.loads(encoded_solution.decode()))
 
     async def _release_claims_of_non_accepted_solutions(
-        self, accepted_solution: list[KnapsackItem], solutions_suggestions: SuggestedSolution
+        self, accepted_solution: AlgorithmSolution, solutions_suggestions: SuggestedSolution
     ) -> None:
-        accepted_solution_item_ids: set[str] = {i.id for i in accepted_solution}
+        accepted_solution_item_ids: set[str] = {i.id for i in accepted_solution.items}
         items_claims_to_release: list[KnapsackItem] = [
-            i for sol in solutions_suggestions.solutions.values() for i in sol if i.id not in accepted_solution_item_ids
+            i for sol in solutions_suggestions.solutions.values() for i in sol.items if i.id not in accepted_solution_item_ids
         ]
         await self._claims_service.release_items_claims(items_claims_to_release)
 
-    async def _perform_accept_single_solution(self, accepted_solution_items: list[KnapsackItem], knapsack_id: str):
-        await self._register_accepted_solution(accepted_solution_items, knapsack_id)
+    async def _perform_accept_single_solution(self, accepted_solution: AlgorithmSolution, knapsack_id: str):
+        await self._register_accepted_solution(accepted_solution.items, knapsack_id)
         await self._remove_solution_suggestion(knapsack_id)
 
     async def _register_accepted_solution(self, accepted_solution_items: list[KnapsackItem], knapsack_id: str):
@@ -105,5 +105,5 @@ class SuggestedSolutionsService:
         await self._redis.hdel(self._solution_suggestions_hash_name, knapsack_id)
 
     @staticmethod
-    def _assign_ids_to_suggested_solutions(solutions: list[list[KnapsackItem]]) -> dict[str, list[KnapsackItem]]:
+    def _assign_ids_to_suggested_solutions(solutions: list[AlgorithmSolution]) -> dict[str, AlgorithmSolution]:
         return {str(uuid4()): sol for sol in solutions}

@@ -4,7 +4,7 @@ from aioredis import Redis
 
 from logic.suggested_solution_service import SuggestedSolutionsService
 from models.knapsack_item import KnapsackItem
-from models.solution import SolutionReportCause, SolutionReport
+from models.solution import SolutionReportCause, SolutionReport, AlgorithmSolution
 
 
 class SolutionReporter:
@@ -15,7 +15,7 @@ class SolutionReporter:
         self._solutions_channel_prefix = solutions_channel_prefix
         self._suggested_solution_service = suggested_solution_service
 
-    async def report_solution_suggestions(self, solutions: list[list[KnapsackItem]], knapsack_id: str):
+    async def report_solution_suggestions(self, solutions: list[AlgorithmSolution], knapsack_id: str):
         solution_report = SolutionReport(cause=SolutionReportCause.SOLUTION_FOUND)
         await self._suggested_solution_service.register_suggested_solutions(solutions, knapsack_id)
         await self._redis.publish(self._channel_name(knapsack_id), solution_report.json())

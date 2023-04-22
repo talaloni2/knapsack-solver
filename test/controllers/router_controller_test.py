@@ -14,7 +14,7 @@ from logic.time_service import TimeService
 from models.algorithms import Algorithms
 from models.knapsack_item import KnapsackItem
 from models.knapsack_router_dto import RouterSolveRequest, AcceptSolutionRequest, RejectSolutionsRequest
-from models.solution import SuggestedSolution, SolutionReport, SolutionReportCause
+from models.solution import SuggestedSolution, SolutionReport, SolutionReportCause, AlgorithmSolution
 from models.suggested_solutions_actions_statuses import AcceptResult, RejectResult
 from test.utils import get_random_string
 
@@ -47,13 +47,13 @@ async def test_route_solve_solution_found(
     solution_suggestions_service_with_mocks: SuggestedSolutionsService,
     knapsack_id,
 ):
-    expected_items = [KnapsackItem(id=get_random_string(), value=10, volume=10)]
+    expected_items = AlgorithmSolution(items=[KnapsackItem(id=get_random_string(), value=10, volume=10)])
     solution_id = get_random_string()
     expected_suggestion = SuggestedSolution(time=time_service_mock.now(), solutions={solution_id: expected_items})
-    request = RouterSolveRequest(items=expected_items, volume=10, knapsack_id=knapsack_id)
+    request = RouterSolveRequest(items=expected_items.items, volume=10, knapsack_id=knapsack_id)
     solve_request_producer = AsyncMock(SolverRouterProducer)
     algo_decider = AsyncMock(AlgorithmDecider)
-    algo_decider.decide = AsyncMock(return_value=Algorithms.FIRST_FIT)
+    algo_decider.decide = AsyncMock(return_value=[Algorithms.FIRST_FIT])
     solution_reports_waiter_mock.wait_for_solution_report = AsyncMock(
         return_value=SolutionReport(cause=SolutionReportCause.SOLUTION_FOUND)
     )
@@ -95,7 +95,7 @@ async def test_route_solve_errors(
     request = RouterSolveRequest(items=items, volume=10, knapsack_id=knapsack_id)
     solve_request_producer = AsyncMock(SolverRouterProducer)
     algo_decider = AsyncMock(AlgorithmDecider)
-    algo_decider.decide = AsyncMock(return_value=Algorithms.FIRST_FIT)
+    algo_decider.decide = AsyncMock(return_value=[Algorithms.FIRST_FIT])
     solution_reports_waiter_mock.wait_for_solution_report = AsyncMock(return_value=SolutionReport(cause=cause))
     solution_suggestions_service_with_mocks.get_solutions = AsyncMock()
 

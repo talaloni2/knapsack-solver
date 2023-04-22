@@ -55,6 +55,9 @@ class GeneticSolver(BaseSolver):
 
         fitness_values = [float(i) / (sum(fitness_values) or 1) for i in fitness_values]
 
+        if sum(fitness_values) == 0:
+            fitness_values = [1 for _ in range(len(fitness_values))]
+
         parent1 = random.choices(population, weights=fitness_values, k=1)[0]
         parent2 = random.choices(population, weights=fitness_values, k=1)[0]
 
