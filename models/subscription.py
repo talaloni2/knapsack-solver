@@ -2,8 +2,8 @@ from enum import Enum
 
 
 class SubscriptionType(str, Enum):
-    STANDARD = "standard"
-    PREMIUM = "premium"
+    STANDARD = "Basic"
+    PREMIUM = "Premium"
 
 
 class SubscriptionScore(int, Enum):
