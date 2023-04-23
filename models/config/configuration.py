@@ -49,3 +49,5 @@ class Config(NamedTuple):
 
     algo_decider_branch_and_bound_max_items: int
     algo_decider_dynamic_programming_max_iterations: int
+
+    subscription_backend_base_url: str

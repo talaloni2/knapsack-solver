@@ -3,7 +3,7 @@ import asyncio
 import uvicorn
 
 import server
-from component_factory import get_solver_consumer, get_solution_maintainer, get_config
+from component_factory import get_solver_consumer, get_solution_maintainer, get_config, get_subscriptions_service
 from logic.consumer.solver_instance_consumer import SolverInstanceConsumer
 from logic.solution_maintainer import run_tasks
 from models.config.configuration import Config, DeploymentType
@@ -13,6 +13,7 @@ def main(config: Config):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     if config.deployment_type == DeploymentType.ROUTER:
+
         uvicorn.run(app=server.app, host="0.0.0.0", port=config.server_port)
         return
     if config.deployment_type == DeploymentType.SOLVER:
