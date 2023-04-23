@@ -1,5 +1,6 @@
 import asyncio
 from http import HTTPStatus
+from unittest.mock import MagicMock, AsyncMock
 
 import pytest
 from aioredis import Redis
@@ -12,6 +13,7 @@ from models.config.configuration import Config
 from models.knapsack_item import KnapsackItem
 from models.knapsack_router_dto import RouterSolveRequest
 from models.solution import SuggestedSolution, AlgorithmSolution
+from models.subscription import SubscriptionScore
 from server import app
 from test.utils import get_random_string
 
@@ -21,6 +23,15 @@ def override_config(config: Config):
     app.dependency_overrides[component_factory.get_config] = lambda: config
     yield
     del app.dependency_overrides[component_factory.get_config]
+
+
+@pytest.fixture
+def override_subscription_service(config: Config):
+    subscription_service = MagicMock()
+    subscription_service.get_subscription_score = AsyncMock(return_value=SubscriptionScore.STANDARD)
+    app.dependency_overrides[component_factory.get_subscriptions_service] = lambda: subscription_service
+    yield
+    del app.dependency_overrides[component_factory.get_subscriptions_service]
 
 
 @pytest.fixture
@@ -38,6 +49,7 @@ async def test_router_controller_endpoint_sanity(
     knapsack_id: str,
     solution_reporter: SolutionReporter,
     solver_queue,
+    override_subscription_service,
 ):
     expected_item = KnapsackItem(id=get_random_string(), value=10, volume=10)
     request = RouterSolveRequest(items=[expected_item], volume=10, knapsack_id=knapsack_id)

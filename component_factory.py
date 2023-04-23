@@ -4,6 +4,7 @@ import aio_pika.abc
 import aioredis
 from aioredis import Redis
 from fastapi import Depends
+from httpx import AsyncClient
 
 from logic.algorithm_decider import AlgorithmDecider
 from logic.algorithm_runner import AlgorithmRunner
@@ -68,6 +69,7 @@ def get_config() -> Config:
         algo_decider_dynamic_programming_max_iterations=int(
             os.getenv("ALGO_DECIDER_DYNAMIC_PROGRAMMING_MAX_ITERATIONS", "10000")
         ),
+        subscription_backend_base_url=os.getenv("SUBSCRIPTION_BACKEND_BASE_URL"),
     )
 
 
@@ -114,8 +116,9 @@ def get_claims_service(redis: Redis = get_redis(), config: Config = get_config()
     )
 
 
-def get_subscriptions_service() -> SubscriptionsService:
-    return SubscriptionsService()
+def get_subscriptions_service(config: Config = Depends(get_config)) -> SubscriptionsService:
+    client = AsyncClient(base_url=config.subscription_backend_base_url)
+    return SubscriptionsService(client)
 
 
 def get_cluster_availability_service_api(
