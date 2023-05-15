@@ -1,5 +1,4 @@
 import http
-from typing import Union
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
@@ -36,7 +35,7 @@ async def route_solve(
     solve_request_producer: SolverRouterProducer = Depends(get_solver_router_producer_api),
     solution_reports_waiter: SolutionReportWaiter = Depends(get_solution_report_waiter_api_route_solve),
     suggested_solution_service: SuggestedSolutionsService = Depends(get_suggested_solutions_service_api),
-) -> Union[SuggestedSolution, JSONResponse]:
+) -> SuggestedSolution:
     if not request.items:
         logger.info(f"Got no items request for {request.knapsack_id}. Aborting.")
         return await no_items_claimed_response()
