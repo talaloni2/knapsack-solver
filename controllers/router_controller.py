@@ -1,4 +1,5 @@
 import http
+from typing import Union
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
@@ -9,6 +10,7 @@ from component_factory import (
     get_suggested_solutions_service_api,
     get_solution_report_waiter_api_route_solve,
 )
+from logger import logger
 from logic.algorithm_decider import AlgorithmDecider
 from logic.producer.solver_router_producer import SolverRouterProducer
 from logic.solution_report_waiter import SolutionReportWaiter
@@ -34,19 +36,34 @@ async def route_solve(
     solve_request_producer: SolverRouterProducer = Depends(get_solver_router_producer_api),
     solution_reports_waiter: SolutionReportWaiter = Depends(get_solution_report_waiter_api_route_solve),
     suggested_solution_service: SuggestedSolutionsService = Depends(get_suggested_solutions_service_api),
-) -> SuggestedSolution:
+) -> Union[SuggestedSolution, JSONResponse]:
+    if not request.items:
+        logger.info(f"Got no items request for {request.knapsack_id}. Aborting.")
+        return await no_items_claimed_response()
     solver_instance_request: SolverInstanceRequest = await _generate_solve_request(algorithm_decider, request)
 
     async with solution_reports_waiter, solve_request_producer:
         await solve_request_producer.produce_solver_instance_request(solver_instance_request)
         report: SolutionReport = await solution_reports_waiter.wait_for_solution_report()
 
+    if report.cause == SolutionReportCause.NO_ITEM_CLAIMED:
+        logger.info(f"Could not claim any items for {request.knapsack_id}. Given items: {request.items}")
+        return await no_items_claimed_response()
     if report.cause != SolutionReportCause.SOLUTION_FOUND:
         # noinspection PyTypeChecker
+        logger.warn(f"Failed solving due to: {report.cause}")
         return _generate_solve_fail_error_response(report)
 
     res = await suggested_solution_service.get_solutions(request.knapsack_id)
     return res
+
+
+async def no_items_claimed_response():
+    return JSONResponse(
+        status_code=http.HTTPStatus.NO_CONTENT,
+        content={"message": "Could not resolve request, please retry with different parameters",
+                 "cause": SolutionReportCause.NO_ITEM_CLAIMED},
+    )
 
 
 async def _generate_solve_request(
