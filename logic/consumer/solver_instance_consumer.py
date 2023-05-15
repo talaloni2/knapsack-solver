@@ -5,6 +5,7 @@ from typing import Optional
 import aio_pika
 import aio_pika.abc
 
+from logger import logger
 from logic.algorithm_runner import AlgorithmRunner
 from logic.claims_service import ClaimsService
 from logic.rabbit_channel_context import RabbitChannelContext
@@ -86,6 +87,7 @@ class SolverInstanceConsumer:
             solutions = [AlgorithmSolution(algorithm=alg, items=sol) for alg, sol in solutions]
             await self._solution_reporter.report_solution_suggestions(solutions, request.knapsack_id)
         except Exception as e:
+            logger.error(f"Failed calculating solution for {request.knapsack_id}.", exc_info=e)
             await self._claims_service.release_items_claims(request.items)
             await self._solution_reporter.report_error(request.knapsack_id, SolutionReportCause.GOT_EXCEPTION)
             traceback.print_exc()
