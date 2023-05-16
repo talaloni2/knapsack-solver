@@ -110,6 +110,6 @@ async def reject_solutions(
     return RejectSolutionResponse(result=result)
 
 
-@router.get("/check_claimed/{item_id}")
+@router.get("/check-claimed/{item_id}")
 async def is_item_claimed(item_id: str, claims_service: ClaimsService = Depends(get_claims_service_api)):
     return ItemClaimedResponse(is_claimed=await claims_service.is_item_claimed(item_id))
