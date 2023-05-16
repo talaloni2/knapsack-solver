@@ -7,10 +7,11 @@ from component_factory import (
     get_solver_router_producer_api,
     get_algorithm_decider_api,
     get_suggested_solutions_service_api,
-    get_solution_report_waiter_api_route_solve,
+    get_solution_report_waiter_api_route_solve, get_claims_service_api,
 )
 from logger import logger
 from logic.algorithm_decider import AlgorithmDecider
+from logic.claims_service import ClaimsService
 from logic.producer.solver_router_producer import SolverRouterProducer
 from logic.solution_report_waiter import SolutionReportWaiter
 from logic.suggested_solution_service import SuggestedSolutionsService
@@ -19,7 +20,7 @@ from models.knapsack_router_dto import (
     AcceptSolutionRequest,
     AcceptSolutionResponse,
     RejectSolutionResponse,
-    RejectSolutionsRequest,
+    RejectSolutionsRequest, ItemClaimedResponse,
 )
 from models.knapsack_solver_instance_dto import SolverInstanceRequest
 from models.solution import SolutionReport, SolutionReportCause, SuggestedSolution
@@ -107,3 +108,8 @@ async def reject_solutions(
 
     result = await suggested_solution_service.reject_suggested_solutions(request.knapsack_id)
     return RejectSolutionResponse(result=result)
+
+
+@router.get("/check_claimed/{item_id}")
+async def is_item_claimed(item_id: str, claims_service: ClaimsService = Depends(get_claims_service_api)):
+    return ItemClaimedResponse(is_claimed=await claims_service.is_item_claimed(item_id))

@@ -78,7 +78,7 @@ async def test_route_solve_solution_found(
 @pytest.mark.parametrize(
     "cause,expected_status",
     [
-        (SolutionReportCause.NO_ITEM_CLAIMED, http.HTTPStatus.BAD_REQUEST),
+        (SolutionReportCause.NO_ITEM_CLAIMED, http.HTTPStatus.NO_CONTENT),
         (SolutionReportCause.SUGGESTION_ALREADY_EXISTS, http.HTTPStatus.BAD_REQUEST),
         (SolutionReportCause.TIMEOUT, http.HTTPStatus.INTERNAL_SERVER_ERROR),
     ],

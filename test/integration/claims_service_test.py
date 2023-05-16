@@ -69,3 +69,19 @@ async def test_claim_running_knapsack(config: Config, knapsack_id):
     assert first_claim is True
     assert unsuccessful_claim is False
     assert second_claim is True
+
+
+@pytest.mark.asyncio
+async def test_check_claims(config: Config, knapsack_id):
+    claimer: ClaimsService = get_claims_service(config=config)
+    expected_claim = [
+        KnapsackItem(id=get_random_string(), value=3, volume=1),
+        KnapsackItem(id=get_random_string(), value=2, volume=1),
+    ]
+
+    no_claims_expected = [await claimer.is_item_claimed(i.id) for i in expected_claim]
+    assert not any(no_claims_expected), "No item should be claimed"
+    await claimer.claim_items(expected_claim, 1, knapsack_id)
+    all_claims_expected = [await claimer.is_item_claimed(i.id) for i in expected_claim]
+    assert all(all_claims_expected), "Not all items claimed"
+    await claimer.release_items_claims(expected_claim)

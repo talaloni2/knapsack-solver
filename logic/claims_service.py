@@ -38,3 +38,7 @@ class ClaimsService:
 
     async def release_claim_running_knapsack(self, knapsack_id: str) -> None:
         await self._redis.hdel(self._running_knapsack_claim_hash, knapsack_id)
+
+    async def is_item_claimed(self, item_id: str):
+        res = await self._redis.hget(self._items_claim_hash, item_id)
+        return res is not None
