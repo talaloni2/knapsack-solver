@@ -1,5 +1,5 @@
 import http
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import AsyncMock
 
 import pytest
@@ -12,6 +12,7 @@ from logic.solution_report_waiter import SolutionReportWaiter
 from logic.suggested_solution_service import SuggestedSolutionsService
 from logic.time_service import TimeService
 from models.algorithms import Algorithms
+from models.config.configuration import Config
 from models.knapsack_item import KnapsackItem
 from models.knapsack_router_dto import RouterSolveRequest, AcceptSolutionRequest, RejectSolutionsRequest
 from models.solution import SuggestedSolution, SolutionReport, SolutionReportCause, AlgorithmSolution
@@ -46,10 +47,15 @@ async def test_route_solve_solution_found(
     solution_reports_waiter_mock: SolutionReportWaiter,
     solution_suggestions_service_with_mocks: SuggestedSolutionsService,
     knapsack_id,
+    config: Config,
 ):
     expected_items = AlgorithmSolution(items=[KnapsackItem(id=get_random_string(), value=10, volume=10)])
     solution_id = get_random_string()
-    expected_suggestion = SuggestedSolution(time=time_service_mock.now(), solutions={solution_id: expected_items})
+    expected_suggestion = SuggestedSolution(
+        time=time_service_mock.now(),
+        solutions={solution_id: expected_items},
+        expires_at=time_service_mock.now() + timedelta(seconds=config.suggestion_ttl_seconds),
+    )
     request = RouterSolveRequest(items=expected_items.items, volume=10, knapsack_id=knapsack_id)
     solve_request_producer = AsyncMock(SolverRouterProducer)
     algo_decider = AsyncMock(AlgorithmDecider)
@@ -57,7 +63,9 @@ async def test_route_solve_solution_found(
     solution_reports_waiter_mock.wait_for_solution_report = AsyncMock(
         return_value=SolutionReport(cause=SolutionReportCause.SOLUTION_FOUND)
     )
-    solution_suggestions_service_with_mocks.get_solutions = AsyncMock(return_value=expected_suggestion)
+    solution_suggestions_service_with_mocks.get_solutions = AsyncMock(
+        return_value=SuggestedSolution(**expected_suggestion.dict())
+    )
 
     response = await route_solve(
         request,
@@ -65,6 +73,7 @@ async def test_route_solve_solution_found(
         solve_request_producer,
         solution_reports_waiter_mock,
         solution_suggestions_service_with_mocks,
+        config,
     )
 
     algo_decider.decide.assert_called_once()

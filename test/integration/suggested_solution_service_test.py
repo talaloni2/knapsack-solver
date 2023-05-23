@@ -137,7 +137,8 @@ async def test_accept_suggested_solution_solution_deleted(
 async def test_is_solution_exists(solution_suggestions_service_with_mocks: SuggestedSolutionsService, knapsack_id: str):
     solution_id = get_random_string()
     suggested_solution = SuggestedSolution(
-        time=datetime.now(), solutions={solution_id: AlgorithmSolution(items=[KnapsackItem(id=get_random_string(), volume=1, value=1)])}
+        time=datetime.now(),
+        solutions={solution_id: AlgorithmSolution(items=[KnapsackItem(id=get_random_string(), volume=1, value=1)])},
     )
     solution_suggestions_service_with_mocks.get_solutions = AsyncMock(return_value=suggested_solution)
 
@@ -165,7 +166,10 @@ async def test_is_solution_exists_suggestion_exists_solution_not_exists(
     solution_suggestions_service_with_mocks: SuggestedSolutionsService, knapsack_id: str
 ):
     suggested_solution = SuggestedSolution(
-        time=datetime.now(), solutions={get_random_string(): AlgorithmSolution(items=[KnapsackItem(id=get_random_string(), volume=1, value=1)])}
+        time=datetime.now(),
+        solutions={
+            get_random_string(): AlgorithmSolution(items=[KnapsackItem(id=get_random_string(), volume=1, value=1)])
+        },
     )
     solution_suggestions_service_with_mocks.get_solutions = AsyncMock(return_value=suggested_solution)
 
@@ -184,7 +188,10 @@ async def test_get_solutions(
     config: Config,
 ):
     expected_solution = SuggestedSolution(
-        time=datetime.now(), solutions={get_random_string(): AlgorithmSolution(items=[KnapsackItem(id=get_random_string(), volume=1, value=1)])}
+        time=datetime.now(),
+        solutions={
+            get_random_string(): AlgorithmSolution(items=[KnapsackItem(id=get_random_string(), volume=1, value=1)])
+        },
     )
     redis_mock.hget = AsyncMock(return_value=expected_solution.json().encode())
 

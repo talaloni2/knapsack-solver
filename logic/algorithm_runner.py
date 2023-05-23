@@ -9,7 +9,9 @@ class AlgorithmRunner:
     def __init__(self, solver_loader: SolverLoader):
         self._solver_loader = solver_loader
 
-    def run_algorithms(self, items: list[KnapsackItem], volume: int, algorithms: list[Algorithms]) -> list[list[KnapsackItem]]:
+    def run_algorithms(
+        self, items: list[KnapsackItem], volume: int, algorithms: list[Algorithms]
+    ) -> list[list[KnapsackItem]]:
         return [self._run_algorithm(items, volume, alg) for alg in algorithms]
 
     def _run_algorithm(self, items: list[KnapsackItem], volume: int, algorithm: Algorithms) -> list[KnapsackItem]:

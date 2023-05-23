@@ -8,8 +8,10 @@ from models.subscription import SubscriptionType, SubscriptionScore
 
 class SubscriptionsService:
     def __init__(self, client: AsyncClient):
-        self._subscription_type_to_score = {SubscriptionType.PREMIUM: SubscriptionScore.PREMIUM,
-                                            SubscriptionType.STANDARD: SubscriptionScore.STANDARD}
+        self._subscription_type_to_score = {
+            SubscriptionType.PREMIUM: SubscriptionScore.PREMIUM,
+            SubscriptionType.STANDARD: SubscriptionScore.STANDARD,
+        }
         self._client: AsyncClient = client
 
     async def get_subscription_score(self, knapsack_id: str) -> SubscriptionScore:
@@ -25,4 +27,6 @@ class SubscriptionsService:
             logger.info(f"Could not find subscription. Using 'standard' score. Error message: {res.content}")
             return SubscriptionScore.STANDARD
 
-        return self._subscription_type_to_score.get(res.json()["result"]["subscription_name"], SubscriptionScore.STANDARD)
+        return self._subscription_type_to_score.get(
+            res.json()["result"]["subscription_name"], SubscriptionScore.STANDARD
+        )

@@ -13,7 +13,6 @@ def main(config: Config):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     if config.deployment_type == DeploymentType.ROUTER:
-
         uvicorn.run(app=server.app, host="0.0.0.0", port=config.server_port)
         return
     if config.deployment_type == DeploymentType.SOLVER:

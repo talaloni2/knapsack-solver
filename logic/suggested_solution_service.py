@@ -87,7 +87,10 @@ class SuggestedSolutionsService:
     ) -> None:
         accepted_solution_item_ids: set[str] = {i.id for i in accepted_solution.items}
         items_claims_to_release: list[KnapsackItem] = [
-            i for sol in solutions_suggestions.solutions.values() for i in sol.items if i.id not in accepted_solution_item_ids
+            i
+            for sol in solutions_suggestions.solutions.values()
+            for i in sol.items
+            if i.id not in accepted_solution_item_ids
         ]
         await self._claims_service.release_items_claims(items_claims_to_release)
 

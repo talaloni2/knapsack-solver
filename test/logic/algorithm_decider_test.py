@@ -15,12 +15,28 @@ from models.subscription import SubscriptionScore
 @pytest.mark.parametrize(
     "availability,subscription,expected_algos",
     [
-        [ClusterAvailabilityScore.AVAILABLE, SubscriptionScore.STANDARD, [Algorithms.GENETIC_HEAVY, Algorithms.GENETIC_LIGHT, Algorithms.GREEDY]],
-        [ClusterAvailabilityScore.MODERATE, SubscriptionScore.STANDARD, [Algorithms.GENETIC_LIGHT, Algorithms.GENETIC_LIGHT, Algorithms.GREEDY]],
+        [
+            ClusterAvailabilityScore.AVAILABLE,
+            SubscriptionScore.STANDARD,
+            [Algorithms.GENETIC_HEAVY, Algorithms.GENETIC_LIGHT, Algorithms.GREEDY],
+        ],
+        [
+            ClusterAvailabilityScore.MODERATE,
+            SubscriptionScore.STANDARD,
+            [Algorithms.GENETIC_LIGHT, Algorithms.GENETIC_LIGHT, Algorithms.GREEDY],
+        ],
         [ClusterAvailabilityScore.BUSY, SubscriptionScore.STANDARD, [Algorithms.GREEDY]],
         [ClusterAvailabilityScore.VERY_BUSY, SubscriptionScore.STANDARD, [Algorithms.GREEDY]],
-        [ClusterAvailabilityScore.AVAILABLE, SubscriptionScore.PREMIUM, [Algorithms.BRANCH_AND_BOUND, Algorithms.GENETIC_HEAVY, Algorithms.GENETIC_LIGHT, Algorithms.GREEDY]],
-        [ClusterAvailabilityScore.MODERATE, SubscriptionScore.PREMIUM, [Algorithms.DYNAMIC_PROGRAMMING, Algorithms.GENETIC_HEAVY, Algorithms.GENETIC_LIGHT, Algorithms.GREEDY]],
+        [
+            ClusterAvailabilityScore.AVAILABLE,
+            SubscriptionScore.PREMIUM,
+            [Algorithms.BRANCH_AND_BOUND, Algorithms.GENETIC_HEAVY, Algorithms.GENETIC_LIGHT, Algorithms.GREEDY],
+        ],
+        [
+            ClusterAvailabilityScore.MODERATE,
+            SubscriptionScore.PREMIUM,
+            [Algorithms.DYNAMIC_PROGRAMMING, Algorithms.GENETIC_HEAVY, Algorithms.GENETIC_LIGHT, Algorithms.GREEDY],
+        ],
         [ClusterAvailabilityScore.BUSY, SubscriptionScore.PREMIUM, [Algorithms.GENETIC_HEAVY]],
         [ClusterAvailabilityScore.VERY_BUSY, SubscriptionScore.PREMIUM, [Algorithms.GENETIC_LIGHT]],
     ],
@@ -79,7 +95,12 @@ async def test_algorithm_decider_thresholds_bnb_to_dp(config: Config, knapsack_i
     decider = AlgorithmDecider(subscriptions_service, cluster_availability_service, 1, 1000)
     algo = await decider.decide(knapsack_id, 2, 10)
 
-    assert algo == [Algorithms.DYNAMIC_PROGRAMMING, Algorithms.GENETIC_HEAVY, Algorithms.GENETIC_LIGHT, Algorithms.GREEDY]
+    assert algo == [
+        Algorithms.DYNAMIC_PROGRAMMING,
+        Algorithms.GENETIC_HEAVY,
+        Algorithms.GENETIC_LIGHT,
+        Algorithms.GREEDY,
+    ]
 
 
 @pytest.mark.asyncio

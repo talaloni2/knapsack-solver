@@ -1,4 +1,5 @@
 import http
+from datetime import timedelta
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
@@ -7,7 +8,9 @@ from component_factory import (
     get_solver_router_producer_api,
     get_algorithm_decider_api,
     get_suggested_solutions_service_api,
-    get_solution_report_waiter_api_route_solve, get_claims_service_api,
+    get_solution_report_waiter_api_route_solve,
+    get_claims_service_api,
+    get_config,
 )
 from logger import logger
 from logic.algorithm_decider import AlgorithmDecider
@@ -15,12 +18,14 @@ from logic.claims_service import ClaimsService
 from logic.producer.solver_router_producer import SolverRouterProducer
 from logic.solution_report_waiter import SolutionReportWaiter
 from logic.suggested_solution_service import SuggestedSolutionsService
+from models.config.configuration import Config
 from models.knapsack_router_dto import (
     RouterSolveRequest,
     AcceptSolutionRequest,
     AcceptSolutionResponse,
     RejectSolutionResponse,
-    RejectSolutionsRequest, ItemClaimedResponse,
+    RejectSolutionsRequest,
+    ItemClaimedResponse,
 )
 from models.knapsack_solver_instance_dto import SolverInstanceRequest
 from models.solution import SolutionReport, SolutionReportCause, SuggestedSolution
@@ -36,6 +41,7 @@ async def route_solve(
     solve_request_producer: SolverRouterProducer = Depends(get_solver_router_producer_api),
     solution_reports_waiter: SolutionReportWaiter = Depends(get_solution_report_waiter_api_route_solve),
     suggested_solution_service: SuggestedSolutionsService = Depends(get_suggested_solutions_service_api),
+    config: Config = Depends(get_config),
 ) -> SuggestedSolution:
     if not request.items:
         logger.info(f"Got no items request for {request.knapsack_id}. Aborting.")
@@ -55,14 +61,22 @@ async def route_solve(
         return _generate_solve_fail_error_response(report)
 
     res = await suggested_solution_service.get_solutions(request.knapsack_id)
+    res = add_expiry(res, config.suggestion_ttl_seconds)
+    return res
+
+
+def add_expiry(res: SuggestedSolution, suggestion_ttl_seconds: int):
+    res.expires_at = res.time + timedelta(seconds=suggestion_ttl_seconds)
     return res
 
 
 async def no_items_claimed_response():
     return JSONResponse(
         status_code=http.HTTPStatus.NO_CONTENT,
-        content={"message": "Could not resolve request, please retry with different parameters",
-                 "cause": SolutionReportCause.NO_ITEM_CLAIMED},
+        content={
+            "message": "Could not resolve request, please retry with different parameters",
+            "cause": SolutionReportCause.NO_ITEM_CLAIMED,
+        },
     )
 
 

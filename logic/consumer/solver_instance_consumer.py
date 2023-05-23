@@ -75,9 +75,7 @@ class SolverInstanceConsumer:
 
             claimed_items: list[KnapsackItem] = await self._try_claim_items(request)
             if not claimed_items:
-                await self._solution_reporter.report_error(
-                    request.knapsack_id, SolutionReportCause.NO_ITEM_CLAIMED
-                )
+                await self._solution_reporter.report_error(request.knapsack_id, SolutionReportCause.NO_ITEM_CLAIMED)
                 return
 
             solutions = self._algo_runner.run_algorithms(claimed_items, request.volume, request.algorithms)
@@ -113,7 +111,9 @@ class SolverInstanceConsumer:
             return
         return claimed_items
 
-    async def _release_non_needed_items(self, claimed_items: list[KnapsackItem], solutions: list[list[KnapsackItem]]) -> None:
+    async def _release_non_needed_items(
+        self, claimed_items: list[KnapsackItem], solutions: list[list[KnapsackItem]]
+    ) -> None:
         solution_ids = {n.id for s in solutions for n in s}
         released_items = [i for i in claimed_items if i.id not in solution_ids]
 
@@ -122,6 +122,8 @@ class SolverInstanceConsumer:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self._channel_context.__aexit__(exc_type, exc_val, exc_tb)
 
-    def _dedup_solutions(self, solutions: list[tuple[Algorithms, list[KnapsackItem]]]) -> list[tuple[Algorithms, list[KnapsackItem]]]:
+    def _dedup_solutions(
+        self, solutions: list[tuple[Algorithms, list[KnapsackItem]]]
+    ) -> list[tuple[Algorithms, list[KnapsackItem]]]:
         seen = list()
         return [seen.append(sol) or (alg, sol) for alg, sol in solutions if sol not in seen]

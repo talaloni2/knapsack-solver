@@ -110,7 +110,9 @@ async def test_solver_knapsack_already_running(config: Config, knapsack_id: str)
     async with consumer:
         await consumer.start_consuming(config.solver_queue)
 
-    solution_reporter.report_solution_suggestions.assert_called_once_with([AlgorithmSolution(items=expected_solution)], knapsack_id)
+    solution_reporter.report_solution_suggestions.assert_called_once_with(
+        [AlgorithmSolution(items=expected_solution)], knapsack_id
+    )
     algorithm_runner.run_algorithms.assert_called_once_with(request.items, request.volume, request.algorithms)
     claims_service.claim_items.assert_called_once_with(request.items, request.volume, request.knapsack_id)
     claims_service.release_items_claims.assert_called_once_with([])

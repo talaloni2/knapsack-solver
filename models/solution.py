@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from typing import Optional
 
 from models.algorithms import Algorithms
 from models.base_model import BaseModel
@@ -25,6 +26,7 @@ class AlgorithmSolution(BaseModel):
 
 class SuggestedSolution(BaseModel):
     time: datetime
+    expires_at: Optional[datetime]
     solutions: dict[str, AlgorithmSolution]
 
 
