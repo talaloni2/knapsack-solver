@@ -61,6 +61,7 @@ async def route_solve(
         return _generate_solve_fail_error_response(report)
 
     res = await suggested_solution_service.get_solutions(request.knapsack_id)
+    res.solutions = {sol_id: sol for sol_id, sol in res.solutions.items() if sol.items}
     res = add_expiry(res, config.suggestion_ttl_seconds)
     return res
 

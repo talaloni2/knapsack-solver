@@ -194,3 +194,40 @@ async def test_reject_solution_solution_not_exists(
     assert RejectResult.SUGGESTION_NOT_EXISTS == response.result
     solution_suggestions_service_with_mocks.get_solutions.assert_called_once_with(knapsack_id)
     solution_suggestions_service_with_mocks.reject_suggested_solutions.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_route_solve_empty_solutions(
+    time_service_mock: TimeService,
+    solution_reports_waiter_mock: SolutionReportWaiter,
+    solution_suggestions_service_with_mocks: SuggestedSolutionsService,
+    knapsack_id: str,
+    config: Config,
+):
+    items = [KnapsackItem(id=get_random_string(), value=10, volume=10)]
+    request = RouterSolveRequest(items=items, volume=10, knapsack_id=knapsack_id)
+    solve_request_producer = AsyncMock(SolverRouterProducer)
+    algo_decider = AsyncMock(AlgorithmDecider)
+    algo_decider.decide = AsyncMock(return_value=[Algorithms.FIRST_FIT])
+    solution_reports_waiter_mock.wait_for_solution_report = AsyncMock(return_value=SolutionReport(cause=SolutionReportCause.SOLUTION_FOUND))
+    solution_suggestions_service_with_mocks.get_solutions = AsyncMock(return_value=SuggestedSolution(
+        time=time_service_mock.now(),
+        expires_at=time_service_mock.now(),
+        solutions={"aa": AlgorithmSolution(algorithm=Algorithms.FIRST_FIT, items=[])}
+    ))
+
+    # noinspection PyTypeChecker
+    response: JSONResponse = await route_solve(
+        request,
+        algo_decider,
+        solve_request_producer,
+        solution_reports_waiter_mock,
+        solution_suggestions_service_with_mocks,
+        config
+    )
+
+    algo_decider.decide.assert_called_once()
+    solve_request_producer.produce_solver_instance_request.assert_called_once()
+    solution_reports_waiter_mock.wait_for_solution_report.assert_called_once()
+    solution_suggestions_service_with_mocks.get_solutions.assert_called_once()
+    assert len(response.solutions) == 0
