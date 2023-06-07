@@ -1,6 +1,5 @@
 import math
 import random
-from typing import Optional
 
 from logic.solver.base_solver import BaseSolver
 from models.knapsack_item import KnapsackItem
@@ -13,7 +12,13 @@ class GeneticSolver(BaseSolver):
         self._initial_population_size = initial_population_size
 
     def solve(self, items: list[KnapsackItem], volume: int) -> list[KnapsackItem]:
-        return self._control_loop(items, volume)
+        results_culled = self._get_results_in_capacity(items, volume)
+        return results_culled or self._get_results_in_capacity(items, volume)  # retrying if culled results is empty
+
+    def _get_results_in_capacity(self, items, volume):
+        results = self._control_loop(items, volume)
+        results_culled = [r for r in results if r.volume <= volume]
+        return results_culled
 
     def _control_loop(self, items: list[KnapsackItem], capacity: int):
         items_count = len(items)
@@ -53,9 +58,7 @@ class GeneticSolver(BaseSolver):
     ) -> tuple[list[bool], list[bool]]:
         fitness_values = []
         for chromosome in population:
-            fitness = self._calculate_fitness(chromosome, items, capacity)
-            if fitness is not None:
-                fitness_values.append(fitness)
+            fitness_values.append(self._calculate_fitness(chromosome, items, capacity))
 
         fitness_values = [float(i) / (sum(fitness_values) or 1) for i in fitness_values]
 
@@ -68,7 +71,8 @@ class GeneticSolver(BaseSolver):
         return parent1, parent2
 
     @staticmethod
-    def _calculate_fitness(chromosome: list[bool], items: list[KnapsackItem], capacity: int) -> Optional[int]:
+    def _calculate_fitness(chromosome: list[bool], items: list[KnapsackItem], capacity: int) -> int:
+        minimum = -99999999999999999
         total_weight = 0
         total_value = 0
         for i in range(len(chromosome)):
@@ -76,9 +80,11 @@ class GeneticSolver(BaseSolver):
                 total_weight += items[i].volume
                 total_value += items[i].value
         if total_weight > capacity:
-            return None
+            return minimum
         else:
-            return total_value
+            if total_value == 0:
+                return minimum
+            return max(minimum, total_value)
 
     @staticmethod
     def _crossover(parent1: list[bool], parent2: list[bool], items_count: int):
@@ -100,9 +106,7 @@ class GeneticSolver(BaseSolver):
     def _get_best(self, population: list[list[bool]], items: list[KnapsackItem], capacity: int) -> list[KnapsackItem]:
         fitness_values = []
         for chromosome in population:
-            fitness = self._calculate_fitness(chromosome, items, capacity)
-            if fitness is not None:
-                fitness_values.append(fitness)
+            fitness_values.append(self._calculate_fitness(chromosome, items, capacity))
 
         max_value = max(fitness_values)
         max_index = fitness_values.index(max_value)
