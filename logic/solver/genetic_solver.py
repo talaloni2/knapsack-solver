@@ -1,5 +1,6 @@
 import math
 import random
+from typing import Optional
 
 from logic.solver.base_solver import BaseSolver
 from models.knapsack_item import KnapsackItem
@@ -52,7 +53,9 @@ class GeneticSolver(BaseSolver):
     ) -> tuple[list[bool], list[bool]]:
         fitness_values = []
         for chromosome in population:
-            fitness_values.append(self._calculate_fitness(chromosome, items, capacity))
+            fitness = self._calculate_fitness(chromosome, items, capacity)
+            if fitness is not None:
+                fitness_values.append(fitness)
 
         fitness_values = [float(i) / (sum(fitness_values) or 1) for i in fitness_values]
 
@@ -65,7 +68,7 @@ class GeneticSolver(BaseSolver):
         return parent1, parent2
 
     @staticmethod
-    def _calculate_fitness(chromosome: list[bool], items: list[KnapsackItem], capacity: int) -> int:
+    def _calculate_fitness(chromosome: list[bool], items: list[KnapsackItem], capacity: int) -> Optional[int]:
         total_weight = 0
         total_value = 0
         for i in range(len(chromosome)):
@@ -73,7 +76,7 @@ class GeneticSolver(BaseSolver):
                 total_weight += items[i].volume
                 total_value += items[i].value
         if total_weight > capacity:
-            return -9999999999
+            return None
         else:
             return total_value
 
@@ -97,7 +100,9 @@ class GeneticSolver(BaseSolver):
     def _get_best(self, population: list[list[bool]], items: list[KnapsackItem], capacity: int) -> list[KnapsackItem]:
         fitness_values = []
         for chromosome in population:
-            fitness_values.append(self._calculate_fitness(chromosome, items, capacity))
+            fitness = self._calculate_fitness(chromosome, items, capacity)
+            if fitness is not None:
+                fitness_values.append(fitness)
 
         max_value = max(fitness_values)
         max_index = fitness_values.index(max_value)
