@@ -1,0 +1,6 @@
+venv
+venv/*
+Readme.md
+*.pytest_cache
+*.pytest_cache/*
+init-db
