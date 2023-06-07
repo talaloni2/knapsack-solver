@@ -1,3 +1,4 @@
+import math
 import random
 
 from logic.solver.base_solver import BaseSolver
@@ -72,7 +73,7 @@ class GeneticSolver(BaseSolver):
                 total_weight += items[i].volume
                 total_value += items[i].value
         if total_weight > capacity:
-            return 0
+            return -9999999999
         else:
             return total_value
 
