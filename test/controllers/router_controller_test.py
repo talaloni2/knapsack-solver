@@ -209,12 +209,16 @@ async def test_route_solve_empty_solutions(
     solve_request_producer = AsyncMock(SolverRouterProducer)
     algo_decider = AsyncMock(AlgorithmDecider)
     algo_decider.decide = AsyncMock(return_value=[Algorithms.FIRST_FIT])
-    solution_reports_waiter_mock.wait_for_solution_report = AsyncMock(return_value=SolutionReport(cause=SolutionReportCause.SOLUTION_FOUND))
-    solution_suggestions_service_with_mocks.get_solutions = AsyncMock(return_value=SuggestedSolution(
-        time=time_service_mock.now(),
-        expires_at=time_service_mock.now(),
-        solutions={"aa": AlgorithmSolution(algorithm=Algorithms.FIRST_FIT, items=[])}
-    ))
+    solution_reports_waiter_mock.wait_for_solution_report = AsyncMock(
+        return_value=SolutionReport(cause=SolutionReportCause.SOLUTION_FOUND)
+    )
+    solution_suggestions_service_with_mocks.get_solutions = AsyncMock(
+        return_value=SuggestedSolution(
+            time=time_service_mock.now(),
+            expires_at=time_service_mock.now(),
+            solutions={"aa": AlgorithmSolution(algorithm=Algorithms.FIRST_FIT, items=[])},
+        )
+    )
 
     # noinspection PyTypeChecker
     response: JSONResponse = await route_solve(
@@ -223,7 +227,7 @@ async def test_route_solve_empty_solutions(
         solve_request_producer,
         solution_reports_waiter_mock,
         solution_suggestions_service_with_mocks,
-        config
+        config,
     )
 
     algo_decider.decide.assert_called_once()

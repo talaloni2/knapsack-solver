@@ -1,4 +1,3 @@
-import math
 import random
 
 from logic.solver.base_solver import BaseSolver
@@ -10,6 +9,7 @@ class GeneticSolver(BaseSolver):
         self._generations = generations
         self._mutation_probability = mutation_probability
         self._initial_population_size = initial_population_size
+        self._minimum_fitness = -99999999999999999
 
     def solve(self, items: list[KnapsackItem], volume: int) -> list[KnapsackItem]:
         results_culled = self._get_results_in_capacity(items, volume)
@@ -17,8 +17,7 @@ class GeneticSolver(BaseSolver):
 
     def _get_results_in_capacity(self, items, volume):
         results = self._control_loop(items, volume)
-        results_culled = [r for r in results if r.volume <= volume]
-        return results_culled
+        return results if sum(r.volume for r in results) <= volume else []
 
     def _control_loop(self, items: list[KnapsackItem], capacity: int):
         items_count = len(items)
@@ -70,9 +69,7 @@ class GeneticSolver(BaseSolver):
 
         return parent1, parent2
 
-    @staticmethod
-    def _calculate_fitness(chromosome: list[bool], items: list[KnapsackItem], capacity: int) -> int:
-        minimum = -99999999999999999
+    def _calculate_fitness(self, chromosome: list[bool], items: list[KnapsackItem], capacity: int) -> int:
         total_weight = 0
         total_value = 0
         for i in range(len(chromosome)):
@@ -80,11 +77,11 @@ class GeneticSolver(BaseSolver):
                 total_weight += items[i].volume
                 total_value += items[i].value
         if total_weight > capacity:
-            return minimum
+            return self._minimum_fitness
         else:
             if total_value == 0:
-                return minimum
-            return max(minimum, total_value)
+                return self._minimum_fitness
+            return max(self._minimum_fitness, total_value)
 
     @staticmethod
     def _crossover(parent1: list[bool], parent2: list[bool], items_count: int):
@@ -122,7 +119,7 @@ class GeneticSolver(BaseSolver):
         self, population: list[list[bool]], items: list[KnapsackItem], capacity: int
     ) -> list[list[bool]]:
         for i, chromosome in enumerate(population):
-            if not self._calculate_fitness(chromosome, items, capacity):
+            if self._calculate_fitness(chromosome, items, capacity) == self._minimum_fitness:
                 population[i] = self._mutate(chromosome, len(items))
         return population
 
@@ -131,12 +128,14 @@ class GeneticSolver(BaseSolver):
     ) -> list[list[bool]]:
         child_idx = 0
         for i, chromosome in enumerate(population):
-            if not self._calculate_fitness(chromosome, items, capacity):
+            # Replace children instead of misfits
+            if self._calculate_fitness(chromosome, items, capacity) == self._minimum_fitness:
                 population[i] = children[child_idx]
                 child_idx += 1
             if child_idx == len(children):
                 return population
 
+        # when no misfits left, replace rest of children into random places
         while child_idx < len(children):
             child_loc = random.randint(0, len(population) - 1)
             population[child_loc] = children[child_idx]
