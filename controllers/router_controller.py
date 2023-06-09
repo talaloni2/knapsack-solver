@@ -92,9 +92,9 @@ async def _generate_solve_request(
 
 
 def _generate_solve_fail_error_response(report: SolutionReport) -> JSONResponse:
-    is_internal_error = report.cause == SolutionReportCause.TIMEOUT
+    is_timeout = report.cause == SolutionReportCause.TIMEOUT
     return JSONResponse(
-        status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR if is_internal_error else http.HTTPStatus.BAD_REQUEST,
+        status_code=http.HTTPStatus.GATEWAY_TIMEOUT if is_timeout else http.HTTPStatus.BAD_REQUEST,
         content={"message": "Could not resolve request, please retry with different parameters", "cause": report.cause},
     )
 
