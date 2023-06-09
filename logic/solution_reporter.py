@@ -3,7 +3,6 @@ from __future__ import annotations
 from aioredis import Redis
 
 from logic.suggested_solution_service import SuggestedSolutionsService
-from models.knapsack_item import KnapsackItem
 from models.solution import SolutionReportCause, SolutionReport, AlgorithmSolution
 
 
