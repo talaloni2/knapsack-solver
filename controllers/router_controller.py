@@ -74,10 +74,7 @@ def add_expiry(res: SuggestedSolution, suggestion_ttl_seconds: int):
 async def no_items_claimed_response():
     return JSONResponse(
         status_code=http.HTTPStatus.NO_CONTENT,
-        content={
-            "message": "Could not resolve request, please retry with different parameters",
-            "cause": SolutionReportCause.NO_ITEM_CLAIMED,
-        },
+        content=None
     )
 
 
