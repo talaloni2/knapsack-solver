@@ -89,7 +89,7 @@ async def test_route_solve_solution_found(
     [
         (SolutionReportCause.NO_ITEM_CLAIMED, http.HTTPStatus.NO_CONTENT),
         (SolutionReportCause.SUGGESTION_ALREADY_EXISTS, http.HTTPStatus.BAD_REQUEST),
-        (SolutionReportCause.TIMEOUT, http.HTTPStatus.INTERNAL_SERVER_ERROR),
+        (SolutionReportCause.TIMEOUT, http.HTTPStatus.GATEWAY_TIMEOUT),
     ],
 )
 async def test_route_solve_errors(
